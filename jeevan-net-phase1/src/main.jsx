@@ -38,17 +38,44 @@ const API_URL = "http://127.0.0.1:8000";
    DEFAULT PATIENT & INITIAL USER STATE
 ========================================================= */
 
+// Fixed synthetic id. This was previously generated with Math.random(), which
+// minted a fresh "verified ABDM id" every time the profile modal was saved.
+const DEMO_ABHA_ID = "ABHA-8921-7740-9281";
+
 const defaultUser = {
   name: "Rajesh Sharma",
   age: "56",
   gender: "Male",
   email: "rajesh.sharma@example.com",
   contact: "+91 98765 43210",
-  abhaId: "ABHA-8921-7740-9281",
+  abhaId: DEMO_ABHA_ID,
   isVerified: true,
 };
 
+// The form opens on a stable, low-risk patient. It previously shipped
+// pre-filled with glucose 323 / BP 165-100, so the very first click always
+// produced a HIGH verdict and the normal path was impossible to demonstrate.
 const defaultForm = {
+  age: "56",
+  gender: "Male",
+  systolic: "122",
+  diastolic: "78",
+  heartRate: "76",
+  spo2: "98",
+  temperature: "36.8",
+  glucoseType: "PP", // Fasting, PP, Regular
+  glucose: "108",
+
+  confusion: false,
+  thirst: false,
+  sweating: false,
+  chestPain: false,
+  breathingDifficulty: false,
+  weakness: false,
+};
+
+// One-click reproduction of the hyperglycaemic-crisis scenario used in the demo.
+const criticalDemoForm = {
   age: "56",
   gender: "Male",
   systolic: "165",
@@ -56,7 +83,7 @@ const defaultForm = {
   heartRate: "108",
   spo2: "93",
   temperature: "37.2",
-  glucoseType: "PP", // Fasting, PP, Regular
+  glucoseType: "PP",
   glucose: "323",
 
   confusion: true,
@@ -481,20 +508,36 @@ async function assessPatient(form) {
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) throw new Error("Backend assessment offline");
+    if (!response.ok) {
+      // Surface the real reason (a 422 validation error is not "offline").
+      let detail = `${response.status} ${response.statusText}`;
+      try {
+        const body = await response.json();
+        if (body && body.detail) {
+          detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+        }
+      } catch {
+        // Non-JSON error body - keep the status line.
+      }
+      throw new Error(`Backend rejected the request (${detail})`);
+    }
+
     const data = await response.json();
-    return { ...data, backendOnline: true };
+    return { ...data, backendOnline: true, backendError: null };
   } catch (error) {
+    // Still return something usable so the demo survives a dead backend, but
+    // report no model probabilities at all rather than inventing 99.9%.
     const local = localTriage(form);
     return {
-      engine: "JEEVAN-NET Hybrid Quantum ML (Simulated)",
-      classical_probability: local.level === "HIGH" ? 92.4 : local.level === "MODERATE" ? 61.2 : 14.5,
-      hybrid_probability: local.level === "HIGH" ? 99.9 : local.level === "MODERATE" ? 68.4 : 18.7,
+      engine: "Offline rule estimate",
+      classical_probability: null,
+      hybrid_probability: null,
       risk_level: local.level,
       prototype_rule_score: local.score,
       symptom_count: Object.values(form).filter((val) => val === true).length,
       backendOnline: false,
-      disclaimer: "Quantum-classical hybrid triage demonstration logic.",
+      backendError: (error && error.message) || "Could not reach the assessment service.",
+      disclaimer: "Backend unreachable - these values come from the local rule engine, not the ML model.",
     };
   }
 }
@@ -691,7 +734,7 @@ function App() {
             </div>
             <div>
               <strong>Offline-First (2G Sync)</strong>
-              <span>ABDM Sandbox Connected</span>
+              <span>Simulated ABDM sandbox</span>
             </div>
           </div>
 
@@ -882,11 +925,17 @@ function AuthModal({ initialUser, onComplete, onClose }) {
       return;
     }
 
+    // The code was previously never compared against anything, so any six
+    // digits were accepted as "verified".
+    if (entered !== demoCode) {
+      setError(`Incorrect OTP. This demo accepts ${demoCode}.`);
+      return;
+    }
+
     setError("");
-    const abhaNumber = `ABHA-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
     onComplete({
       ...formData,
-      abhaId: initialUser.abhaId || abhaNumber,
+      abhaId: initialUser.abhaId || DEMO_ABHA_ID,
       isVerified: true,
     });
   };
@@ -1460,14 +1509,18 @@ function Dashboard({ user, assessmentData, selectedFacility, onNavigate, onOpenA
         <div className="panel-header">
           <div>
             <div className="section-label">CLINICAL STROKE TIMELINE COMPARISON</div>
-            <h3>Traditional 210 Mins Delay vs JEEVAN-NET 45 Mins Grid</h3>
+            <h3>Illustrative stroke timeline: uncoordinated vs coordinated</h3>
+            <p className="muted">
+              This is a scenario illustration, not a measured result. The timings below are
+              modelled assumptions for the demo and have not been validated in a field trial.
+            </p>
           </div>
         </div>
 
         <div className="stroke-comparison-grid">
           <div className="journey-card-baseline">
             <div style={{ color: "#dc2626", fontWeight: 700, fontSize: "14px", marginBottom: "8px" }}>
-              ⚠️ BASELINE TRADITIONAL JOURNEY (210 MINS DELAY)
+              ⚠️ BASELINE TRADITIONAL JOURNEY (ILLUSTRATIVE, ~210 MIN)
             </div>
             <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12.5px", color: "#7f1d1d", lineHeight: "1.6" }}>
               <li>Home delays: Symptom confusion handled with home remedies</li>
@@ -1479,7 +1532,7 @@ function Dashboard({ user, assessmentData, selectedFacility, onNavigate, onOpenA
 
           <div className="journey-card-jeevan">
             <div style={{ color: "#16a34a", fontWeight: 700, fontSize: "14px", marginBottom: "8px" }}>
-              ⚡ JEEVAN-NET COORDINATED GRID (45 MINS TO ER)
+              ⚡ JEEVAN-NET COORDINATED GRID (TARGET, ~45 MIN)
             </div>
             <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12.5px", color: "#14532d", lineHeight: "1.6" }}>
               <li>Instant Onset Timestamp: Companion logs symptom onset immediately</li>
@@ -1958,13 +2011,19 @@ function PatientAssessment({ user, onAssessmentComplete, onOpenFacilityMatching 
     const local = localTriage(form);
     const backend = await assessPatient(form);
 
+    const modelLevel = backend.backendOnline ? backend.risk_level : null;
+
     const combined = {
       ...backend,
       localScore: local.score,
       localLevel: local.level,
+      modelLevel,
+      // The effective verdict: the model's whenever we actually have one, and
+      // the local rule engine's only as an explicitly-labelled fallback. This
+      // line used to unconditionally overwrite the model with the rule score.
+      risk_level: modelLevel || local.level,
       indicators: local.indicators,
       action: local.action,
-      risk_level: local.level,
     };
 
     setResult(combined);
@@ -1984,10 +2043,33 @@ function PatientAssessment({ user, onAssessmentComplete, onOpenFacilityMatching 
             <div className="section-label">CLINICAL TRIAGE & REMEDY PIPELINE</div>
             <h2>Patient Parameter Intake</h2>
             <p className="muted">
-              Pre-filled from verified user profile ({user.name}, {user.age} yrs, {user.gender}).
+              Age and gender come from your verified profile. Vitals start at a stable
+              baseline — use a preset below to load a specific scenario.
             </p>
           </div>
           <div className="demo-badge">LIVE CLINICAL LOOP</div>
+        </div>
+
+        <div className="preset-row">
+          <span className="preset-label">Demo presets</span>
+          <button
+            type="button"
+            className="secondary-button preset-button"
+            onClick={() =>
+              setForm({ ...defaultForm, age: user.age || "56", gender: user.gender || "Male" })
+            }
+          >
+            Stable patient
+          </button>
+          <button
+            type="button"
+            className="secondary-button preset-button"
+            onClick={() =>
+              setForm({ ...criticalDemoForm, age: user.age || "56", gender: user.gender || "Male" })
+            }
+          >
+            Critical crisis patient
+          </button>
         </div>
 
         {/* SUGGESTED MANDATORY TESTS ALERT BOX */}
@@ -2060,10 +2142,11 @@ function PatientAssessment({ user, onAssessmentComplete, onOpenFacilityMatching 
 }
 
 function Field({ label, value, onChange }) {
+  const id = `field-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
     <div className="field">
-      <label>{label}</label>
-      <input type="number" value={value} onChange={(e) => onChange(e.target.value)} />
+      <label htmlFor={id}>{label}</label>
+      <input id={id} type="number" value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
@@ -2079,18 +2162,47 @@ function Checkbox({ label, checked, onChange }) {
 
 function Result({ result, onOpenFacilityMatching }) {
   const isHigh = result.risk_level === "HIGH";
+  const hasModel = Boolean(result.backendOnline && result.modelLevel);
+  const percent = (value) => (value == null ? "—" : `${value}%`);
 
   return (
     <section className="panel result-panel">
-      <div className="section-label">HYBRID TRIAGE OUTPUT</div>
+      <div className="result-source-row">
+        <div className="section-label">TRIAGE OUTPUT</div>
+        <span className={`backend-badge ${result.backendOnline ? "online" : "offline"}`}>
+          {result.backendOnline ? "● Live model" : "○ Offline rule estimate"}
+        </span>
+      </div>
+
       <div className={`risk-banner ${isHigh ? "risk-high" : "risk-normal"}`}>
         <div>
-          <span>RISK LEVEL</span>
+          <span>{hasModel ? "MODEL RISK LEVEL" : "RULE-BASED RISK LEVEL"}</span>
           <strong>{result.risk_level} RISK</strong>
         </div>
         <div className="risk-score">
           {result.localScore ?? result.prototype_rule_score}
           <small>/15</small>
+        </div>
+      </div>
+
+      {!result.backendOnline && (
+        <div className="offline-notice">
+          <strong>Assessment service unreachable.</strong>{" "}
+          {result.backendError || "No further detail available."} The verdict above comes
+          from the local rule engine; no ML probabilities exist for this assessment.
+        </div>
+      )}
+
+      <div className="verdict-compare">
+        <div>
+          <span>ML MODEL</span>
+          <strong>
+            {hasModel ? `${result.modelLevel} · ${percent(result.hybrid_probability)}` : "not available"}
+          </strong>
+        </div>
+        <div>
+          <span>RULE CHECK</span>
+          <strong>{`${result.localLevel} · ${result.localScore}/15`}</strong>
         </div>
       </div>
 
@@ -2111,17 +2223,21 @@ function Result({ result, onOpenFacilityMatching }) {
       </div>
 
       <div className="hybrid-box">
-        <div className="section-label">HYBRID QUANTUM MACHINE LEARNING CONFIDENCE</div>
+        <div className="section-label">MODEL CONFIDENCE</div>
         <div className="model-grid">
           <div>
             <span>Classical Model</span>
-            <strong>{result.classical_probability != null ? `${result.classical_probability}%` : "88.2%"}</strong>
+            <strong>{percent(result.classical_probability)}</strong>
           </div>
           <div>
             <span>Quantum-Classical Model</span>
-            <strong>{result.hybrid_probability}%</strong>
+            <strong>{percent(result.hybrid_probability)}</strong>
           </div>
         </div>
+        <p>
+          Trained on synthetic data whose labels were generated by the rule check above.
+          Research prototype — not a clinical diagnostic output.
+        </p>
       </div>
 
       <button className="primary-button facility-next-button" onClick={onOpenFacilityMatching}>
@@ -2368,7 +2484,7 @@ function MedicalStreamsModule() {
               <div style={{ fontSize: "11px", fontWeight: 700, color: "#15803d", textTransform: "uppercase" }}>
                 ONDC & JAN AUSHADHI GENERIC DRUG COMPARATOR
               </div>
-              <h3 style={{ margin: "4px 0", color: "#0f172a" }}>40% Reduction in Out-of-Pocket Patient Costs</h3>
+              <h3 style={{ margin: "4px 0", color: "#0f172a" }}>Illustrative generic-vs-branded cost comparison</h3>
             </div>
             <div style={{ background: "#16a34a", color: "white", padding: "6px 12px", borderRadius: "20px", fontWeight: 700, fontSize: "13px" }}>
               40% Out-of-Pocket Savings
@@ -2383,9 +2499,13 @@ function MedicalStreamsModule() {
 
             <div style={{ background: "#ffffff", padding: "12px", borderRadius: "10px", border: "1px solid #86efac" }}>
               <div style={{ fontSize: "12px", color: "#16a34a" }}>Generic Jan Aushadhi Sitagliptin (ONDC Network)</div>
-              <strong style={{ fontSize: "16px", color: "#16a34a" }}>₹ 45 / strip (87% Savings)</strong>
+              <strong style={{ fontSize: "16px", color: "#16a34a" }}>₹ 45 / strip (87% less)</strong>
             </div>
           </div>
+
+          <p className="muted" style={{ marginTop: "12px" }}>
+            Prices are illustrative placeholders for the demo, not live ONDC or Jan Aushadhi quotes.
+          </p>
         </div>
       </section>
     </div>
