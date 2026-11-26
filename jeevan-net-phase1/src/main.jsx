@@ -1208,7 +1208,7 @@ function LiveVideoCallModal({ doctor, user, onClose }) {
         <div className="video-feed-grid">
           {/* DOCTOR VIDEO FEED */}
           <div className="doctor-video-box">
-            <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)", display: "flex", alignItems: "center", justify: "center", fontSize: "28px", fontWeight: 700, marginBottom: "12px", boxShadow: "0 0 30px rgba(56, 189, 248, 0.4)" }}>
+            <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: 700, marginBottom: "12px", boxShadow: "0 0 30px rgba(56, 189, 248, 0.4)" }}>
               {doctor.avatar}
             </div>
             <h4 style={{ margin: "0 0 4px", fontSize: "18px", color: "#ffffff" }}>{doctor.name}</h4>
@@ -1222,7 +1222,7 @@ function LiveVideoCallModal({ doctor, user, onClose }) {
           {/* PATIENT VIDEO FEED & DIGITAL PRESCRIPTION PANEL */}
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div className="patient-video-box" style={{ height: "160px" }}>
-              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#2563eb", display: "flex", alignItems: "center", justify: "center", fontSize: "16px", fontWeight: 700 }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", fontWeight: 700 }}>
                 {user.name.charAt(0)}
               </div>
               <span style={{ fontSize: "12px", color: "#cbd5e1", marginTop: "6px" }}>You ({user.name})</span>
@@ -1289,7 +1289,7 @@ function AppointmentBookingModal({ doctor, user, onClose }) {
         <div className="auth-body">
           {isBooked ? (
             <div style={{ textAlign: "center", padding: "20px 0" }}>
-              <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justify: "center", margin: "0 auto 16px" }}>
+              <div style={{ width: "60px", height: "60px", borderRadius: "50%", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                 <IconCheckCircle size={36} />
               </div>
               <h3 style={{ margin: "0 0 6px", color: "#0f172a" }}>Appointment Confirmed!</h3>
