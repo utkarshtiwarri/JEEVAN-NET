@@ -1,155 +1,166 @@
+<div align="center">
+
+<img src="jeevan-net-phase1/public/jeevan-net-logo.jpeg" alt="JEEVAN-NET" width="120" />
+
 # JEEVAN-NET
 
-### India's Intelligent Healthcare Response Network
+**India's Intelligent Healthcare Response Network**
 
-**From Symptom to Solution — Before It's Too Late.**
+*From Symptom to Solution — Before It's Too Late.*
 
-\<p align="center">
-&#x20; \<strong>An AI-powered healthcare orchestration platform connecting patients, healthcare workers, ambulances, diagnostic centres, specialists and hospitals through intelligent coordination.\</strong>
-\</p>
+[![React](https://img.shields.io/badge/React-18.3-149ECA?logo=react&logoColor=white)](jeevan-net-phase1)
+[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite&logoColor=white)](jeevan-net-phase1)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](Backend)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5+-F7931E?logo=scikitlearn&logoColor=white)](Backend)
+[![Qiskit](https://img.shields.io/badge/Qiskit-1.2+-6929C4)](Backend)
+[![Status](https://img.shields.io/badge/status-research%20prototype-0d6170)](docs/limitations.md)
+
+An AI-assisted healthcare **coordination** layer — not another hospital app.
+
+</div>
 
 ---
 
-## 1. Overview
+## The idea in one paragraph
 
-Healthcare systems often have the resources needed to save lives, yet patients still experience delays because those resources are fragmented, difficult to locate or poorly coordinated.
+Healthcare rarely fails for lack of infrastructure. It fails because the infrastructure is fragmented: the nearest ambulance may lack oxygen, the nearest hospital may lack a CT scanner or a neurologist, and the patient's records are scattered across providers. JEEVAN-NET is a software-first coordination layer that answers four questions in sequence — **what does the patient need, where is that capability, how fast can it be reached, and what happens next** — and then acts on the answer.
 
-A patient may need an ambulance, but not every ambulance has the required equipment. The nearest hospital may not have the necessary specialist, ICU capacity or diagnostic facilities. Medical information may be scattered across multiple providers, making timely decisions difficult.
+> **The core insight:** route the patient to the nearest **suitable** facility, not the nearest facility.
 
-**JEEVAN-NET** addresses this coordination gap.
+---
 
-It is a software-first, AI-powered healthcare intelligence and orchestration platform designed to connect existing healthcare infrastructure into a coordinated response network.
+## Scope and status
 
-Rather than functioning as another standalone healthcare application, JEEVAN-NET focuses on answering four critical questions:
+This repository is an honest snapshot. Every row is labelled, because a coordination platform that overstates itself is worse than useless.
 
-- What healthcare assistance does the patient need?
-- Where is the required medical capability available?
-- How quickly can that capability be reached?
-- What should happen next?
+| Capability | Status | Where |
+| --- | --- | --- |
+| Clinical triage (vitals + symptoms → risk) | **Working** | `src/pages/PatientAssessment.jsx` |
+| ML scoring API (classical + quantum-derived features) | **Working** | `Backend/main.py` |
+| Facility matching with weighted capability scoring | **Working** | `src/lib/scoring.js` |
+| Concentric radius lookup, govt vs private | **Working** | `src/pages/FacilityMatching.jsx` |
+| GoI NCD screening tables by age and gender | **Working** | `src/data/guidelines.js` |
+| Teleconsultation and appointment flow | **Working** | `src/pages/DoctorConsultModule.jsx` |
+| Voice symptom intake (13 languages) | **Working** | `src/pages/VoiceCompanionView.jsx` |
+| Ambulance dispatch sequence | **Simulated** | `src/pages/Emergency.jsx` |
+| Hospital, doctor, and bed data | **Fixture** | `src/data/` |
+| ABDM / ABHA integration | **Not implemented** | — |
+| Persistence, authentication, multi-user roles | **Not implemented** | — |
 
-Our vision is to help transform healthcare delivery from fragmented and reactive processes into a coordinated, predictive and resource-aware ecosystem.
+`Working` means it runs and produces a result. `Simulated` means the workflow is real but the counterparties are not. `Fixture` means the data is compiled into the bundle. Full detail: [`docs/limitations.md`](docs/limitations.md).
 
-## 2. The Problem We Are Solving
+---
 
-Healthcare delivery faces several interconnected challenges:
+## Quick start
 
-| Challenge                      | Existing Gap                                                             |
-| ------------------------------ | ------------------------------------------------------------------------ |
-| Emergency response delays      | Difficulty identifying the right ambulance and capable hospital          |
-| Rural healthcare accessibility | Limited access to specialists and advanced facilities                    |
-| Specialist shortages           | Uneven distribution and utilization of medical expertise                 |
-| Diagnostic delays              | Inefficient coordination between patients and diagnostic centres         |
-| Fragmented patient records     | Medical information distributed across different providers               |
-| Ambulance inefficiency         | Limited coordination between ambulance capability and hospital readiness |
-| Hospital overcrowding          | Poor visibility into resource availability and patient flow              |
-| Blood availability             | Difficulty anticipating regional demand and supply gaps                  |
-| Chronic disease management     | Delayed identification of worsening health trends                        |
-| Public-health monitoring       | Difficulty identifying emerging patterns across healthcare facilities    |
+Two terminals. The frontend runs on its own — the backend is optional.
 
-The central issue is not always the absence of healthcare infrastructure. It is often the absence of an intelligent system coordinating the infrastructure that already exists.
+**Frontend** (required)
 
-## 3. Our Solution
+```bash
+cd jeevan-net-phase1
+npm install
+npm run dev          # http://localhost:5173
+```
 
-JEEVAN-NET introduces an intelligent coordination layer across the healthcare ecosystem.
+**Backend** (optional, enables the ML verdict)
 
-The platform combines AI-assisted analysis, resource matching, geospatial intelligence, predictive monitoring and human-in-the-loop workflows.
+```bash
+cd Backend
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
 
-### Core Operating Philosophy
+With the backend down the triage screen still works, using the local rule engine, and says so on screen:
 
-**CONNECT → UNDERSTAND → ACT**
+| Backend | Verdict source | Badge in the result panel |
+| --- | --- | --- |
+| Running | Trained model | `● Live model` |
+| Down or unreachable | Local rule engine | `○ Offline rule estimate` |
 
-1. **CONNECT:** Connect patients, health workers, doctors, hospitals, ambulances, laboratories and blood banks.
-2. **UNDERSTAND:** Evaluate patient needs, urgency, medical history, geographical accessibility and available healthcare resources.
-3. **ACT:** Recommend suitable care pathways, coordinate resources, facilitate clinical handoffs and initiate follow-up workflows.
+Port 5173 is pinned in `vite.config.js` because the backend's CORS allowlist names it only.
 
-The platform uses specialized intelligence engines instead of depending on one generic chatbot.
+**Checks**
 
-## 4. Key Features & Intelligence Modules
+```bash
+npm run build    # production bundle
+npm run check    # static: every cross-module reference resolves
+```
 
-### A. Emergency Intelligence
+There is no test suite yet. `npm run check` verifies imports, not behaviour.
 
-An emergency coordination engine that evaluates the patient's requirements and identifies suitable healthcare destinations.
+---
 
-Key capabilities:
+## Screens
 
-- Emergency severity assessment support.
-- Capability-aware hospital matching.
-- Ambulance suitability evaluation.
-- Travel-time and resource consideration.
-- Hospital pre-alert and clinical handoff generation.
+| | Screen | What it does |
+| :-- | --- | --- |
+| 🩺 | **Clinical Triage** | Vitals and symptoms in; rule score and ML verdict out, side by side |
+| 🏥 | **Concentric Locator** | Facilities ranked inside 1–3, 3–5 and 5–6 km bands, with sector and bed counts |
+| 📞 | **Doctor Consult** | Specialist directory, instant video call, appointment booking |
+| 🎤 | **Voice Companion** | Spoken symptom intake in 13 Indian languages, with first-aid guidance |
+| 📋 | **Age Checklist** | Population-based NCD screening package, by age and gender |
+| 💊 | **Expense & Streams** | Allopathy / Ayurveda / Homeopathy allocation and drug cost comparison |
+| 🚑 | **Emergency Grid** | Ambulance dispatch status sequence |
+| 📁 | **Patient Record** | Demographics and last recorded vitals |
 
-**Core innovation:** The system prioritizes the nearest suitable hospital, not simply the nearest hospital.
+---
 
-### B. Hospital Capability Map
+## Architecture
 
-A geospatial healthcare resource intelligence layer that represents hospitals and healthcare facilities based on their capabilities.
+### As built
 
-Potential parameters include:
+```mermaid
+flowchart LR
+    subgraph Browser["React SPA · :5173"]
+        UI[9 screens<br/>no router, state in App.jsx]
+        RULE[lib/triage.js<br/>rule engine · always runs]
+        API[lib/api.js<br/>fetch client]
+    end
 
-- Bed and ICU availability.
-- Specialist availability.
-- CT and other diagnostic facilities.
-- Operation theatre availability.
-- Blood availability.
-- Ambulance and emergency support.
+    subgraph Server["FastAPI · :8000"]
+        EP["POST /api/assess"]
+        CL[classical_model<br/>LogisticRegression]
+        HY[hybrid_model<br/>+ 4 quantum features]
+    end
 
-### C. AI Patient Timeline
+    UI --> RULE
+    UI --> API
+    API -->|"POST vitals + symptoms"| EP
+    EP --> CL
+    EP --> HY
+    RULE -.->|"fallback if unreachable"| UI
+    CL -.->|"probabilities"| UI
+    HY -.->|"probabilities"| UI
+```
 
-A consent-based patient information management module that organizes permitted health records into a chronological timeline.
+One call crosses the boundary. Everything else — hospitals, doctors, beds, ETAs, guidelines, prices — is fixture data in `src/data/`.
 
-Key capabilities:
+### Designed
 
-- Medical history summarization.
-- Diagnosis and medication timelines.
-- Identification of relevant health trends.
-- Concise clinical briefing generation.
-- Structured information handoff between healthcare providers.
-
-### D. Diagnostic Logistics Intelligence
-
-A diagnostic coordination engine designed to identify appropriate diagnostic pathways using:
-
-- Diagnostic availability.
-- Geographic distance.
-- Expected turnaround time.
-- Clinical urgency.
-- Estimated cost.
-
-### E. Predictive Healthcare Radar
-
-A predictive intelligence module designed to identify potential healthcare bottlenecks and emerging resource requirements.
-
-Potential applications:
-
-- Blood demand forecasting.
-- Hospital resource bottleneck alerts.
-- Chronic-care follow-up signals.
-- Regional healthcare demand monitoring.
-- Public-health anomaly detection.
-
-## 5. System Architecture
-
-JEEVAN-NET follows a modular architecture consisting of specialized intelligence engines connected through a common coordination layer.
+The coordination layer this is meant to grow into:
 
 ```mermaid
 flowchart TB
     A[Healthcare Ecosystem]
 
-    A --> B[Citizen Application]
-    A --> C[Healthcare Worker Interface]
+    A --> B[Citizen App]
+    A --> C[Health Worker Interface]
     A --> D[Hospital Dashboard]
     A --> E[Government Dashboard]
 
-    B --> F[Healthcare Coordination Layer]
+    B --> F[Coordination Layer]
     C --> F
     D --> F
     E --> F
 
     F --> G[Emergency Intelligence]
-    F --> H[Hospital Capability Engine]
-    F --> I[AI Patient Timeline]
+    F --> H[Hospital Capability Map]
+    F --> I[Patient Timeline]
     F --> J[Diagnostic Logistics]
-    F --> K[Predictive Healthcare Radar]
+    F --> K[Predictive Radar]
 
     G --> L[Unified Resource Intelligence]
     H --> L
@@ -160,282 +171,142 @@ flowchart TB
     L --> M[Ambulances]
     L --> N[Hospitals]
     L --> O[Diagnostic Centres]
-    L --> P[Specialists and Health Workers]
-
-    M --> Q[Coordinated Healthcare Response]
-    N --> Q
-    O --> Q
-    P --> Q
+    L --> P[Specialists]
 ```
 
-### Architectural Principles
-
-- **Modularity:** Independent intelligence engines for different healthcare workflows.
-- **Interoperability:** Designed to leverage existing public digital-health infrastructure.
-- **Scalability:** Architecture designed to expand from individual facilities to district, state and national deployments.
-- **Human-in-the-loop:** AI supports prioritization and coordination while authorized healthcare professionals retain clinical decision-making authority.
-- **Privacy-first:** Consent-based access and privacy-preserving information handling.
-- **Resilience:** Offline-first workflows with queued synchronization for weak-network environments.
-
-## 6. Core Development Modules
-
-| Module                      | Primary Function                                  |
-| --------------------------- | ------------------------------------------------- |
-| Emergency Intelligence      | Emergency → triage support → ambulance → hospital |
-| Hospital Capability Map     | Healthcare resource and capability matching       |
-| AI Patient Timeline         | Consent-based record summarization                |
-| Diagnostic Logistics        | Appropriate diagnostic pathway optimization       |
-| Predictive Healthcare Radar | Bottleneck, blood and operational alerts          |
-
-The initial implementation prioritizes a demonstrable end-to-end emergency coordination workflow while establishing the foundation for additional healthcare intelligence modules.
-
-## 7. The Emergency Demonstration Scenario
-
-### Case Study: Suspected Stroke Emergency
-
-**Scenario:** A 58-year-old male presents with symptoms indicating a possible stroke.
-
-JEEVAN-NET demonstrates an integrated healthcare coordination workflow.
-
-1. An emergency request is initiated.
-2. The emergency risk pathway is activated.
-3. Suitable ambulances are evaluated.
-4. Stroke-capable hospitals are identified.
-5. CT scan availability is checked.
-6. Neurologist availability is considered.
-7. Travel time and facility capacity are evaluated.
-8. A suitable destination is recommended.
-9. The receiving hospital is alerted.
-10. A structured clinical handoff is generated.
-11. A follow-up pathway is created.
-
-### Performance Evaluation
-
-| Evaluation Metric            | Purpose                          |
-| ---------------------------- | -------------------------------- |
-| Time to appropriate facility | Measures coordination efficiency |
-| Unnecessary transfers        | Evaluates referral quality       |
-| Resource utilization         | Measures matching efficiency     |
-| Handoff completeness         | Evaluates information continuity |
-| Response coordination time   | Measures operational performance |
-
-Performance improvements should be calculated from actual test runs and clearly identified as simulated results where applicable.
-
-## 8. User Interfaces
-
-JEEVAN-NET is designed around four primary user environments.
-
-**Citizen Interface**
-
-- Emergency assistance
-- My Health
-- Find Care
-- Medicines
-- Medical Reports
-- Family
-- Follow-up
-
-**Healthcare Worker Interface**
-
-- Patient management
-- Emergency requests
-- Tele-specialist coordination
-- Diagnostics
-- Referrals
-- Follow-up
-
-**Hospital Dashboard**
-
-- Emergency queue
-- Beds and ICU
-- Doctor availability
-- Ambulance coordination
-- Diagnostics
-- Blood availability
-- Patient flow
-- AI-generated operational alerts
-
-**Government Dashboard**
-
-- Population at risk
-- Healthcare demand
-- Resource availability
-- Predicted bottlenecks
-- Recommended interventions
-
-## 9. Technology & Implementation Strategy
-
-JEEVAN-NET follows a software-first approach to minimize deployment costs and leverage existing healthcare infrastructure.
-
-The system is designed around the following technical capabilities:
-
-| Technical Area          | Intended Application                                    |
-| ----------------------- | ------------------------------------------------------- |
-| Artificial Intelligence | Clinical information summarization and decision support |
-| Geospatial Intelligence | Facility discovery and location-aware resource matching |
-| Optimization Algorithms | Ambulance and hospital resource allocation              |
-| Predictive Analytics    | Demand forecasting and operational alerts               |
-| Data Management         | Structured patient and healthcare resource information  |
-| Interoperability        | Integration with existing healthcare infrastructure     |
-| Offline-first Design    | Queued synchronization under weak connectivity          |
-
-The specific frameworks, APIs, databases and deployment infrastructure will be documented as they are implemented and validated.
-
-## 10. Safety, Privacy & Responsible AI
-
-Healthcare technology must be designed with patient safety and accountability at its core.
-
-JEEVAN-NET follows these principles:
-
-- AI supports, but never replaces, licensed medical decision-making.
-- Emergency treatment must never be delayed by cost optimization.
-- Patient information must be handled through appropriate consent and access controls.
-- Synthetic data is used for prototyping unless authorized real-world data access and governance are established.
-- Predictions, confidence levels and uncertainty must be clearly communicated.
-- Clinical validation must not be claimed without appropriate validation.
-- Existing public digital-health infrastructure should be leveraged wherever appropriate.
-
-JEEVAN-NET is designed as a healthcare coordination and decision-support platform, not an autonomous diagnostic or prescribing system.
-
-## 11. Scalability & Future Roadmap
-
-**Phase 1 — Core Platform**
-
-- Emergency Intelligence
-- Hospital Capability Map
-- AI Patient Timeline
-- Diagnostic Logistics
-- Predictive Healthcare Radar
-
-**Phase 2 — Healthcare Network Expansion**
-
-- Specialist Pooling Engine
-- MED-SHIELD medication safety support
-- MOTHER-GUARD maternal and neonatal escalation support
-- BLOOD-PULSE demand forecasting
-- CARE-COST OPTIMIZER
-
-**Phase 3 — District-Level Healthcare Intelligence**
-
-- Healthcare Digital Twin
-- Resource demand forecasting
-- Regional bottleneck detection
-- Inter-facility coordination
-- Public-health intelligence
-
-**Phase 4 — National-Scale Ecosystem**
-
-- Multi-district deployment
-- Broader healthcare interoperability
-- Advanced predictive intelligence
-- Integration with additional healthcare service networks
-
-### Future Extension: RAKSHAK-X
-
-JEEVAN-NET can eventually integrate with RAKSHAK-X, a disaster-response robotics concept.
-
-The proposed workflow:
-
-**Disaster → Robotic Intelligence → Victim Identification → Healthcare Orchestration → Rescue & Medical Response**
-
-RAKSHAK-X can provide aerial or ground reconnaissance and victim intelligence, while JEEVAN-NET coordinates ambulances, blood, diagnostics, specialists and hospitals.
-
-## 12. Repository Structure
-
-> **Note:** the tree below is the original proposed layout, not the current
-> repository. What is actually implemented — including what is fixture data
-> rather than an engine — is documented in
-> [`docs/architecture.md`](docs/architecture.md) and
-> [`docs/limitations.md`](docs/limitations.md).
-
-The following is the proposed repository organization. It should evolve with the actual implementation.
-
-```text
-JEEVAN-NET/
-│
-├── README.md
-│
-├── docs/
-│   ├── architecture.md
-│   ├── system-workflow.md
-│   ├── development-roadmap.md
-│   └── safety-and-privacy.md
-│
-├── frontend/
-│   ├── citizen/
-│   ├── healthcare-worker/
-│   ├── hospital-dashboard/
-│   └── government-dashboard/
-│
-├── backend/
-│   ├── api/
-│   ├── services/
-│   └── integrations/
-│
-├── intelligence/
-│   ├── emergency/
-│   ├── hospital-capability/
-│   ├── patient-timeline/
-│   ├── diagnostic-logistics/
-│   └── predictive-radar/
-│
-├── data/
-│   ├── synthetic/
-│   └── schemas/
-│
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── simulation/
-│
-├── assets/
-│   ├── screenshots/
-│   ├── diagrams/
-│   └── logo/
-│
-├── .gitignore
-├── LICENSE
-└── CONTRIBUTING.md
-```
-
-## 13. Getting Started
-
-The setup instructions will be finalized with the selected implementation stack.
-
-The repository will include:
-
-1. Prerequisites and environment requirements.
-2. Installation instructions.
-3. Environment variable configuration.
-4. Database and synthetic-data initialization.
-5. Backend startup instructions.
-6. Frontend startup instructions.
-7. Instructions for running the emergency simulation.
-
-## 14. Project Impact & Differentiation
-
-**Innovation:** Targets the coordination gap between existing healthcare workflows.
-
-**Technical Depth:** Combines AI, optimization, geospatial reasoning, interoperability and predictive intelligence.
-
-**Feasibility:** The core demonstration can be developed using synthetic healthcare data and simulated hospital and ambulance feeds.
-
-**Scalability:** Designed to expand from a single facility to district, state and national healthcare networks.
-
-**Social Impact:** Aims to improve emergency coordination, utilization of scarce resources and continuity of care.
-
-**Cost Efficiency:** Leverages existing smartphones, hospitals, ambulances, laboratories and public digital-health infrastructure.
-
-## 15. Our Vision
-
-We envision a healthcare ecosystem in which the right medical assistance can be identified, coordinated and reached with greater efficiency.
-
-A system where hospitals are not isolated facilities, ambulances are not independent services, and patient information does not remain fragmented across disconnected workflows.
-
-JEEVAN-NET aims to connect these elements through a unified intelligence and coordination layer.
-
-> **We are not building another hospital app. We are building the intelligence layer that helps India's existing healthcare infrastructure work as one system.**
+Only the citizen interface and parts of Emergency Intelligence and the Capability Map exist today. See the status table above.
 
 ---
 
-\<p align="center">   \<strong>JEEVAN-NET\</strong>   \<br/>   India's Intelligent Healthcare Response Network   \<br/>\<br/>   \<em>Connecting People. Coordinating Resources. Enabling Timely Care.\</em> \</p>
+## How the scoring works
+
+Three engines, deliberately kept visible rather than merged: [`docs/scoring.md`](docs/scoring.md).
+
+**1 · Rule engine** — `src/lib/triage.js`. Additive, transparent, runs offline. Glucose ≥ 300 scores 3, hypertensive crisis 2, hypoxia 2, each symptom 2, age ≥ 50 scores 1, capped at 15. `HIGH ≥ 9`, `MODERATE ≥ 5`. It also generates the human-readable indicators and recommended action.
+
+**2 · Label heuristic** — `Backend/main.py`. Generates training labels for 3,500 synthetic patients (`risk_score >= 7`, with 2.5% of labels flipped). Uses *different* thresholds from the frontend — symptoms capped at 6 total, age ≥ 65 — which is why the two verdicts can disagree.
+
+**3 · Models** — `StandardScaler` + `LogisticRegression` over the eight vitals, plus a second estimator fed four extra features from a 4-qubit circuit.
+
+### On the "quantum" label
+
+Being precise, because this is where healthcare demos usually overreach: `quantum_features()` builds a **fixed** 4-qubit `RY`/`RZ` + CNOT angle-encoding circuit and evaluates it with a classical `Statevector` simulation. It has **no trainable parameters, no variational loop, and no quantum speedup**. It is a deterministic non-linear feature map — preprocessing, not a quantum model.
+
+What is genuinely novel here is the **coordination layer and the matching logic**, not the classifier.
+
+### Facility matching
+
+`src/lib/scoring.js` weights five attributes:
+
+```
+match = 0.30·capability + 0.25·capacity + 0.20·ETA
+      + 0.15·specialist + 0.10·diagnostics      → capped at 99
+```
+
+Under a `HIGH` risk verdict, facilities with ICU and emergency capability receive a bonus, so a well-equipped hospital outranks a marginally closer one that cannot treat the patient.
+
+---
+
+## The problem
+
+| Challenge | The gap |
+| --- | --- |
+| Emergency response delays | Hard to identify an ambulance that has the right equipment *and* a hospital that can receive |
+| Rural access | Specialists and advanced diagnostics concentrated in cities |
+| Specialist shortages | Expertise exists, but is unevenly distributed and poorly routed |
+| Diagnostic delays | Patient and centre are not matched on availability, turnaround or cost |
+| Fragmented records | History spread across providers, unavailable at the moment of need |
+| Ambulance inefficiency | Transport capability is not matched to the receiving facility's readiness |
+| Hospital overcrowding | No shared visibility into beds, ICU and patient flow |
+| Blood availability | Regional demand and supply gaps surface too late |
+| Chronic disease | Worsening trends detected after the fact, not before |
+| Public health | Emerging patterns across facilities go unseen |
+
+The central issue is usually **not** the absence of infrastructure. It is the absence of a system coordinating what already exists.
+
+---
+
+## Design principles
+
+| Principle | How it shows up in the code |
+| --- | --- |
+| **Human-in-the-loop** | AI produces a ranked recommendation; no autonomous diagnosis or prescribing |
+| **Transparency over confidence** | Both verdicts displayed side by side, with their source labelled |
+| **Graceful degradation** | Backend unreachable → local rule engine, explicitly marked, never silently faked |
+| **Privacy-first** | Synthetic data only; no real patient records are present |
+| **Interoperability** | Shaped around ABDM/ABHA conventions, though not yet integrated |
+| **Offline tolerance** | All clinical logic runs client-side when the network is unavailable |
+
+> AI supports, but never replaces, licensed medical decision-making. Emergency care must never be delayed by cost optimisation. Clinical validation is not claimed, because none has been performed.
+
+---
+
+## Repository layout
+
+```text
+Hackathon-Project/
+├── README.md                  this file
+├── COVEXCODE.md               working notes for the build environment
+├── docs/
+│   ├── architecture.md        as-built structure, data flow, debt
+│   ├── scoring.md             the three engines, compared
+│   └── limitations.md         what is not built, and what is not measured
+├── Backend/
+│   ├── main.py                FastAPI + both models
+│   ├── requirements.txt
+│   └── README.md
+└── jeevan-net-phase1/
+    ├── vite.config.js         react plugin, strictPort 5173
+    ├── scripts/
+    │   ├── verify-imports.mjs static import check  (npm run check)
+    │   └── find-dead-css.mjs  lists unreferenced CSS classes
+    └── src/
+        ├── main.jsx           entry point
+        ├── App.jsx            shell, navigation, modal hosting
+        ├── Icons.jsx          31 inline SVG icons
+        ├── styles.css         all styling
+        ├── data/              patients, doctors, facilities, languages, guidelines
+        ├── lib/               triage.js, scoring.js, api.js
+        ├── components/        Field, Checkbox, RecordItem
+        ├── modals/            Auth, VideoCall, AppointmentBooking
+        └── pages/             one file per screen, plus Result and FacilityCard
+```
+
+---
+
+## Roadmap
+
+| Phase | Scope | Status |
+| --- | --- | --- |
+| **1 — Core platform** | Emergency intelligence, capability map, patient timeline, diagnostic logistics, predictive radar | Citizen UI + triage + matching built |
+| **2 — Network expansion** | Specialist pooling, MED-SHIELD medication safety, MOTHER-GUARD maternal escalation, BLOOD-PULSE forecasting, CARE-COST optimiser | Planned |
+| **3 — District intelligence** | Healthcare digital twin, regional demand forecasting, bottleneck detection, inter-facility coordination | Planned |
+| **4 — National ecosystem** | Multi-district deployment, broader interoperability, advanced predictive intelligence | Planned |
+
+Longer term, JEEVAN-NET is designed to pair with **RAKSHAK-X**, a disaster-response robotics concept: *disaster → robotic reconnaissance → victim identification → healthcare orchestration → rescue.* RAKSHAK-X supplies victim intelligence; JEEVAN-NET coordinates the medical response.
+
+---
+
+## Documentation
+
+| Document | Contents |
+| --- | --- |
+| [`docs/architecture.md`](docs/architecture.md) | As-built layout, one-triage data flow, state ownership, structural debt |
+| [`docs/scoring.md`](docs/scoring.md) | All three scoring engines side by side, and how to align them |
+| [`docs/limitations.md`](docs/limitations.md) | Unbuilt modules, illustrative numbers, security and accessibility gaps |
+| [`Backend/README.md`](Backend/README.md) | Endpoints, request schema, what the models actually are |
+| [`jeevan-net-phase1/README.md`](jeevan-net-phase1/README.md) | Frontend setup, screen list, project layout |
+
+---
+
+<div align="center">
+
+### We are not building another hospital app.
+
+### We are building the intelligence layer that helps existing healthcare infrastructure work as one system.
+
+*Connecting People. Coordinating Resources. Enabling Timely Care.*
+
+**Research prototype — not a clinical diagnostic system. Do not use for patient care.**
+
+</div>
