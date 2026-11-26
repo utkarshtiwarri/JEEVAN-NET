@@ -342,6 +342,12 @@ RAKSHAK-X can provide aerial or ground reconnaissance and victim intelligence, w
 
 ## 12. Repository Structure
 
+> **Note:** the tree below is the original proposed layout, not the current
+> repository. What is actually implemented — including what is fixture data
+> rather than an engine — is documented in
+> [`docs/architecture.md`](docs/architecture.md) and
+> [`docs/limitations.md`](docs/limitations.md).
+
 The following is the proposed repository organization. It should evolve with the actual implementation.
 
 ```text
