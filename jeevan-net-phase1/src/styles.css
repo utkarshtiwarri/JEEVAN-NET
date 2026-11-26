@@ -404,30 +404,6 @@ button:disabled {
   border: 2px solid #ffffff;
 }
 
-.profile-circle {
-  width: 38px;
-  height: 38px;
-
-  border-radius: 50%;
-
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-  color: white;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 12px;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.profile-circle:hover {
-  transform: scale(1.05);
-}
-
 .content-area {
   padding: 28px 32px;
   flex: 1;
@@ -623,86 +599,6 @@ button:disabled {
   font-weight: 200;
 
   margin-right: 30px;
-}
-
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.stat-card {
-  background: white;
-
-  border: 1px solid var(--border);
-  border-radius: 12px;
-
-  padding: 18px 20px;
-
-  box-shadow: var(--shadow);
-}
-
-.stat-card span,
-.stat-card small {
-  display: block;
-}
-
-.stat-card span {
-  color: #8195a1;
-  font-size: 11px;
-}
-
-.stat-card strong {
-  display: block;
-
-  margin: 7px 0 3px;
-
-  font-size: 20px;
-  color: #154658;
-}
-
-.stat-card small {
-  color: #93a4ad;
-  font-size: 10px;
-}
-
-.workflow {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-
-  overflow-x: auto;
-
-  padding-bottom: 4px;
-}
-
-.workflow-step {
-  min-width: 150px;
-
-  padding: 14px;
-
-  border: 1px solid var(--border);
-  border-radius: 9px;
-
-  background: #fafcfc;
-
-  color: #426577;
-
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.workflow-step span {
-  display: block;
-
-  color: var(--primary);
-  font-size: 9px;
-
-  margin-bottom: 5px;
-}
-
-.workflow-arrow {
-  color: #9aabb4;
 }
 
 /* =========================================================
@@ -1013,50 +909,6 @@ button:disabled {
 }
 
 /* =========================================================
-   PATIENT SUMMARY
-========================================================= */
-
-.patient-summary {
-  display: grid;
-
-  grid-template-columns: repeat(3, 1fr);
-
-  gap: 12px;
-}
-
-.patient-summary > div {
-  background: #f8fbfb;
-
-  border: 1px solid var(--border);
-
-  border-radius: 8px;
-
-  padding: 13px;
-}
-
-.patient-summary span {
-  display: block;
-
-  color: #8296a1;
-
-  font-size: 9px;
-}
-
-.patient-summary strong {
-  display: block;
-
-  margin-top: 5px;
-
-  color: #174b5e;
-
-  font-size: 17px;
-}
-
-.high-text {
-  color: #c84747 !important;
-}
-
-/* =========================================================
    FACILITY MATCHING
 ========================================================= */
 
@@ -1148,125 +1000,12 @@ button:disabled {
   margin-top: 5px;
 }
 
-.capability-list {
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: 8px;
-
-  margin-bottom: 20px;
-}
-
-.capability {
-  padding: 7px 10px;
-
-  border-radius: 5px;
-
-  font-size: 10px;
-}
-
-.capability.enabled {
-  background: #eef9f6;
-  color: #168b7d;
-
-  border: 1px solid #cce9e2;
-}
-
-.capability.disabled {
-  background: #f6f7f8;
-  color: #9ba8ae;
-
-  border: 1px solid #e2e7e9;
-}
-
-.facility-reasons {
-  border-top: 1px solid var(--border);
-
-  padding-top: 17px;
-}
-
-.reason-row {
-  display: flex;
-
-  align-items: center;
-
-  gap: 9px;
-
-  padding: 7px 0;
-
-  color: #526f7d;
-
-  font-size: 11px;
-}
-
-.reason-row span {
-  color: var(--success);
-
-  font-weight: 700;
-}
-
 .facility-actions {
   display: flex;
 
   gap: 10px;
 
   margin-top: 20px;
-}
-
-.selected-message {
-  margin-top: 12px;
-
-  background: #eef9f6;
-
-  border: 1px solid #cbe8e1;
-
-  color: #168779;
-
-  border-radius: 7px;
-
-  padding: 10px;
-
-  font-size: 11px;
-}
-
-.matching-factors {
-  display: grid;
-
-  grid-template-columns:
-    repeat(5, minmax(0, 1fr));
-
-  gap: 10px;
-
-  margin-bottom: 15px;
-}
-
-.match-factor {
-  border: 1px solid var(--border);
-
-  border-radius: 8px;
-
-  padding: 13px;
-
-  background: #fafcfc;
-}
-
-.match-factor span {
-  display: block;
-
-  color: #718894;
-
-  font-size: 9px;
-}
-
-.match-factor strong {
-  display: block;
-
-  margin-top: 6px;
-
-  color: var(--primary);
-
-  font-size: 18px;
 }
 
 .alternative-list {
@@ -1356,26 +1095,6 @@ button:disabled {
   font-size: 9px;
 }
 
-.facility-tags {
-  display: flex;
-
-  gap: 6px;
-
-  margin-bottom: 14px;
-}
-
-.mini-tag {
-  background: #eef7f8;
-
-  color: #27717b;
-
-  border-radius: 4px;
-
-  padding: 4px 6px;
-
-  font-size: 8px;
-}
-
 .confirmed-panel {
   display: flex;
 
@@ -1404,170 +1123,6 @@ button:disabled {
   justify-content: space-between;
 }
 
-.emergency-grid {
-  display: grid;
-
-  grid-template-columns: 1fr 1fr;
-
-  gap: 20px;
-}
-
-.emergency-alert {
-  border-color: #efcccc;
-  background: #fffafa;
-}
-
-.emergency-alert-icon {
-  width: 42px;
-  height: 42px;
-
-  border-radius: 50%;
-
-  background: #fff0f0;
-  border: 1px solid #efcccc;
-
-  color: var(--danger);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 20px;
-  font-weight: 800;
-
-  margin-bottom: 14px;
-}
-
-.emergency-alert h2 {
-  color: #c44343;
-}
-
-.emergency-patient-summary {
-  display: grid;
-
-  grid-template-columns: repeat(4, 1fr);
-
-  gap: 8px;
-
-  margin-top: 18px;
-}
-
-.emergency-patient-summary div {
-  background: white;
-
-  border: 1px solid #efdede;
-
-  border-radius: 7px;
-
-  padding: 9px;
-}
-
-.emergency-patient-summary span {
-  display: block;
-
-  color: #9b8a8a;
-
-  font-size: 8px;
-}
-
-.emergency-patient-summary strong {
-  display: block;
-
-  color: #7b4545;
-
-  margin-top: 4px;
-
-  font-size: 13px;
-}
-
-.emergency-facility-info {
-  display: grid;
-
-  grid-template-columns: 1fr 1fr;
-
-  gap: 10px;
-
-  margin-top: 20px;
-}
-
-.emergency-facility-info div {
-  background: #f8fafb;
-
-  border: 1px solid var(--border);
-
-  border-radius: 7px;
-
-  padding: 11px;
-}
-
-.emergency-facility-info span {
-  display: block;
-
-  color: #8597a0;
-
-  font-size: 9px;
-}
-
-.emergency-facility-info strong {
-  display: block;
-
-  color: #275467;
-
-  margin-top: 4px;
-
-  font-size: 12px;
-}
-
-.dispatch-status {
-  background: #fff6e5;
-
-  border: 1px solid #f0ddb1;
-
-  color: #a2761d;
-
-  border-radius: 5px;
-
-  padding: 7px 10px;
-
-  font-size: 9px;
-  font-weight: 700;
-
-  text-transform: uppercase;
-}
-
-.dispatch-status.completed {
-  background: #eef9f6;
-
-  border-color: #c8e7df;
-
-  color: #178778;
-}
-
-.dispatch-timeline {
-  display: grid;
-
-  grid-template-columns:
-    repeat(5, minmax(0, 1fr));
-
-  gap: 10px;
-
-  margin-top: 22px;
-}
-
-.timeline-step {
-  position: relative;
-
-  border: 1px solid var(--border);
-
-  border-radius: 8px;
-
-  padding: 13px;
-
-  background: #fafcfc;
-
-  opacity: 0.55;
-}
-
 .timeline-step.active {
   opacity: 1;
 
@@ -1576,48 +1131,9 @@ button:disabled {
   background: #f5fbfb;
 }
 
-.timeline-number {
-  width: 26px;
-  height: 26px;
-
-  border-radius: 50%;
-
-  background: #edf1f3;
-
-  color: #8a9ba4;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 9px;
-  font-weight: 700;
-
-  margin-bottom: 10px;
-}
-
 .timeline-step.active .timeline-number {
   background: var(--primary);
   color: white;
-}
-
-.timeline-step strong {
-  display: block;
-
-  color: #375e6d;
-
-  font-size: 10px;
-}
-
-.timeline-step span {
-  display: block;
-
-  color: #83959f;
-
-  font-size: 9px;
-  line-height: 1.4;
-
-  margin-top: 4px;
 }
 
 .dispatch-actions {
@@ -1625,72 +1141,6 @@ button:disabled {
 
   display: flex;
   justify-content: center;
-}
-
-.dispatch-running {
-  background: #f4f8f9;
-
-  border: 1px solid var(--border);
-
-  border-radius: 7px;
-
-  padding: 11px 20px;
-
-  color: #69818c;
-
-  font-size: 11px;
-}
-
-.coordination-summary {
-  background: #f9fcfc;
-}
-
-.coordination-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 10px;
-
-  margin-top: 15px;
-}
-
-.coordination-grid div {
-  border: 1px solid var(--border);
-
-  border-radius: 8px;
-
-  padding: 12px;
-
-  background: white;
-}
-
-.coordination-grid span {
-  display: block;
-
-  color: #8296a1;
-
-  font-size: 9px;
-}
-
-.coordination-grid strong {
-  display: block;
-
-  color: #285568;
-
-  font-size: 11px;
-
-  margin-top: 5px;
-}
-
-.prototype-note {
-  color: #95a5ad;
-
-  font-size: 9px;
-  line-height: 1.5;
-
-  margin: 15px 0 0;
 }
 
 /* =========================================================
@@ -1734,30 +1184,6 @@ button:disabled {
 
 .record-header h3 {
   margin: 0 0 4px;
-}
-
-.record-risk {
-  margin-left: auto;
-
-  text-align: right;
-}
-
-.record-risk span {
-  display: block;
-
-  color: #879aa4;
-
-  font-size: 9px;
-}
-
-.record-risk strong {
-  display: block;
-
-  color: var(--danger);
-
-  font-size: 17px;
-
-  margin-top: 4px;
 }
 
 .history-grid {
@@ -1806,120 +1232,12 @@ button:disabled {
   margin-top: 5px;
 }
 
-.record-symptoms {
-  display: grid;
-
-  grid-template-columns:
-    repeat(3, 1fr);
-
-  gap: 9px;
-
-  margin-top: 15px;
-}
-
-.record-symptom {
-  padding: 10px;
-
-  border-radius: 7px;
-
-  background: #f7f9fa;
-
-  border: 1px solid var(--border);
-
-  color: #899aa3;
-
-  font-size: 10px;
-}
-
-.record-symptom span {
-  margin-right: 6px;
-}
-
 .record-symptom.active {
   background: #eef9f6;
 
   border-color: #cbe8e1;
 
   color: #247f75;
-}
-
-.history-risk {
-  display: grid;
-
-  grid-template-columns: repeat(3, 1fr);
-
-  gap: 12px;
-
-  margin-top: 15px;
-}
-
-.history-risk > div {
-  background: #f8fafb;
-
-  border: 1px solid var(--border);
-
-  border-radius: 8px;
-
-  padding: 14px;
-}
-
-.history-risk span {
-  display: block;
-
-  color: #8598a2;
-
-  font-size: 9px;
-}
-
-.history-risk strong {
-  display: block;
-
-  color: var(--primary);
-
-  font-size: 18px;
-
-  margin-top: 6px;
-}
-
-.record-action {
-  background: #f4f9fa;
-
-  border: 1px solid #d9eaed;
-
-  border-radius: 8px;
-
-  padding: 14px;
-
-  margin-top: 15px;
-}
-
-.record-action span {
-  display: block;
-
-  color: #8498a2;
-
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.record-action strong {
-  display: block;
-
-  color: #385e6d;
-
-  font-size: 11px;
-  line-height: 1.5;
-
-  margin-top: 5px;
-}
-
-.record-actions {
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 20px;
 }
 
 /* =========================================================
@@ -2418,80 +1736,6 @@ button:disabled {
 }
 
 /* =========================================================
-   GOVT-COMPLIANT AGE CHECKLIST MODULE
-========================================================= */
-
-.age-checklist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.age-checklist-card {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 18px;
-  transition: all 0.25s ease;
-  position: relative;
-}
-
-.age-checklist-card.mandated-for-user {
-  border-color: #0284c7;
-  background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%);
-  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.08);
-}
-
-.age-tier-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.age-tier-badge {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 20px;
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.mandated-for-user .age-tier-badge {
-  background: #0284c7;
-  color: #ffffff;
-}
-
-.age-tier-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 6px;
-}
-
-.age-tier-desc {
-  font-size: 12.5px;
-  color: #64748b;
-  line-height: 1.4;
-  margin-bottom: 14px;
-}
-
-.age-mandated-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #0369a1;
-  background: #e0f2fe;
-  padding: 3px 8px;
-  border-radius: 6px;
-}
-
-/* =========================================================
    CONCENTRIC RADIUS LOCATOR & GOVT VS PRIVATE BREAKDOWN
 ========================================================= */
 
@@ -2527,20 +1771,6 @@ button:disabled {
   color: #ffffff;
   border-color: #0284c7;
   box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
-}
-
-.facility-comparison-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
-}
-
-.facility-sector-card {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
 }
 
 .sector-badge-govt {
@@ -2627,17 +1857,6 @@ button:disabled {
   100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
-}
-
-.parsed-fhir-output {
-  background: rgba(0, 0, 0, 0.3);
-  border-left: 3px solid #38bdf8;
-  padding: 12px;
-  border-radius: 0 8px 8px 0;
-  font-family: monospace;
-  font-size: 12px;
-  color: #38bdf8;
-  margin-top: 14px;
 }
 
 /* =========================================================

@@ -1,0 +1,15 @@
+export const INDIAN_LANGUAGES = [
+  { code: "hi-IN", name: "Hindi (हिंदी)" },
+  { code: "ta-IN", name: "Tamil (தமிழ்)" },
+  { code: "te-IN", name: "Telugu (తెలుగు)" },
+  { code: "kn-IN", name: "Kannada (ಕನ್ನಡ)" },
+  { code: "bn-IN", name: "Bengali (বাংলা)" },
+  { code: "mr-IN", name: "Marathi (मराठी)" },
+  { code: "gu-IN", name: "Gujarati (ગુજરાતી)" },
+  { code: "ml-IN", name: "Malayalam (മലയാളം)" },
+  { code: "pa-IN", name: "Punjabi (ਪੰਜਾਬੀ)" },
+  { code: "or-IN", name: "Odia (ଓଡ଼ିଆ)" },
+  { code: "as-IN", name: "Assamese (অসমীয়া)" },
+  { code: "ur-IN", name: "Urdu (اردو)" },
+  { code: "en-IN", name: "English (India)" },
+];
