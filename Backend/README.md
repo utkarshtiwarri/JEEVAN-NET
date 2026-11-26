@@ -1,6 +1,6 @@
 # JEEVAN-NET — Backend
 
-FastAPI service exposing the triage scoring endpoint used by the Phase 1 frontend.
+FastAPI service exposing the triage scoring endpoint used by the frontend.
 
 > **This is a research prototype, not a clinical device.** Training data is synthetic.
 > It must not be used for diagnosis, triage decisions, or patient care.

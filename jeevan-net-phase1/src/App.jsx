@@ -178,7 +178,7 @@ export function App() {
             </div>
           </div>
 
-          <div className="copyright">SIH 2026 • SteelBrains</div>
+          <div className="copyright">JEEVAN-NET</div>
         </div>
       </aside>
 
@@ -186,7 +186,7 @@ export function App() {
       <main className="main-content">
         <header className="top-header">
           <div>
-            <div className="eyebrow">SIH 2026 • HEALTHCARE INTELLIGENCE & COORDINATION</div>
+            <div className="eyebrow">HEALTHCARE INTELLIGENCE & COORDINATION</div>
             <h1>{pageTitle}</h1>
           </div>
 
@@ -295,8 +295,8 @@ export function App() {
         </div>
 
         <footer className="page-footer">
-          <span>JEEVAN-NET / ArogyaNexus • Team SteelBrains</span>
-          <span>SIH 2026 Prototype • Verified ABDM Health ID: {user.abhaId}</span>
+          <span>JEEVAN-NET / ArogyaNexus</span>
+          <span>Research prototype • Verified ABDM Health ID: {user.abhaId}</span>
         </footer>
       </main>
     </div>
