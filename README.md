@@ -46,7 +46,9 @@ This repository is an honest snapshot. Every row is labelled, because a coordina
 | Hospital, doctor, and bed data | **Partly real** | 129 real facilities from OpenStreetMap; doctors are still fixtures |
 | ABDM / ABHA integration | **Not implemented** | — |
 | Sign-in (email/password, Supabase, optional) | **Working** | `src/pages/Login.jsx`, `src/lib/auth.js` |
-| Clinical data persistence (assessments, bookings) | **Working** | `assessments` + `patients` tables |
+| Patient profiles and register | **Working** | Supabase `profiles` + `patients` tables |
+| Triage assessment history | **Working** | Supabase `assessments` table, optionally linked to a patient |
+| Appointment persistence | **Not implemented** | Appointment flow is a simulation; bookings are not stored |
 
 `Working` means it runs and produces a result. `Simulated` means the workflow is real but the counterparties are not. `Fixture` means the data is compiled into the bundle. Full detail: [`docs/limitations.md`](docs/limitations.md).
 
@@ -82,6 +84,33 @@ With the backend down the triage screen still works, using the local rule engine
 | Down or unreachable | Local rule engine | `○ Offline rule estimate` |
 
 Port 5173 is pinned in `vite.config.js` because the backend's CORS allowlist names it only.
+
+### Optional Supabase setup
+
+Supabase provides email/password accounts and owner-scoped storage for profiles,
+the patient register, and triage assessments. The frontend connects directly to
+Supabase; the FastAPI service is not used for authentication or database writes.
+
+1. Copy `jeevan-net-phase1/.env.example` to
+   `jeevan-net-phase1/.env.local` and set your project URL and **publishable**
+   key:
+
+   ```dotenv
+   VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+   ```
+
+2. Restart the Vite server so it loads the new environment variables.
+3. In the Supabase dashboard, open **SQL Editor**, paste the contents of
+   [`jeevan-net-phase1/supabase/setup.sql`](jeevan-net-phase1/supabase/setup.sql),
+   and run it. This idempotent script creates the profile, patient, and
+   assessment tables, their ownership policies, and the signup profile trigger.
+
+Use **Create Account** to register a Supabase user. **Sign in** only
+authenticates an existing account; demo and guest access stay local and do not
+write to Supabase. Passwords are handled by Supabase Auth, not stored in the
+patient profile table. Never place a `service_role` key in a Vite environment
+file: browser variables are public.
 
 **Checks**
 
@@ -129,7 +158,7 @@ node scripts/test-voice-engine.mjs   # 45 cases, must exit 0
 ```mermaid
 flowchart LR
     subgraph Browser["React SPA · :5173"]
-        UI[9 screens<br/>no router, state in App.jsx]
+        UI[Screen state in App.jsx<br/>no router]
         RULE[lib/triage.js<br/>rule engine · always runs]
         API[lib/api.js<br/>fetch client]
     end
@@ -140,8 +169,16 @@ flowchart LR
         HY[hybrid_model<br/>+ 4 quantum features]
     end
 
+    subgraph Database["Supabase · optional"]
+        AUTH[Supabase Auth]
+        DB["Postgres + RLS<br/>profiles · patients · assessments"]
+        AUTH --> DB
+    end
+
     UI --> RULE
     UI --> API
+    UI -->|"sign-up / sign-in"| AUTH
+    UI -->|"profile, patient, assessment CRUD"| DB
     API -->|"POST vitals + symptoms"| EP
     EP --> CL
     EP --> HY
@@ -150,11 +187,15 @@ flowchart LR
     HY -.->|"probabilities"| UI
 ```
 
-One call crosses the boundary. Everything else — hospitals, doctors, beds, ETAs, guidelines, prices — is fixture data in `src/data/`.
+The scoring API handles triage inference. Supabase is an **optional** direct
+browser connection for authentication and persistence: profiles, patient
+records, and assessment history are protected by row-level security. The
+appointments, hospitals, doctors, beds, ETAs, guidelines, and prices are still
+simulated or fixture data in `src/data/`. Without Supabase configuration, demo
+and guest sign-in remain available, but database-backed features are disabled.
 
-Supabase is an **optional** third edge, used only for accounts and the `profiles`
-row. `src/lib/supabase.js` exports `null` when the env vars are absent, and the
-app still runs on the demo/guest sign-in path.
+`src/lib/supabase.js` creates the client only when valid environment variables
+are present; the app still runs on the demo/guest sign-in path without them.
 
 ### Designed
 
@@ -269,6 +310,7 @@ Hackathon-Project/
 ├── COVEXCODE.md               working notes for the build environment
 ├── docs/
 │   ├── architecture.md        as-built structure, data flow, debt
+│   ├── evaluation.md          measured model performance and limits
 │   ├── scoring.md             the three engines, compared
 │   └── limitations.md         what is not built, and what is not measured
 ├── Backend/
@@ -277,6 +319,8 @@ Hackathon-Project/
 │   └── README.md
 └── jeevan-net-phase1/
     ├── vite.config.js         react plugin, strictPort 5173
+    ├── supabase/
+    │   └── setup.sql          tables, RLS policies, signup profile trigger
     ├── scripts/
     │   ├── verify-imports.mjs static import check  (npm run check)
     │   └── find-dead-css.mjs  lists unreferenced CSS classes
