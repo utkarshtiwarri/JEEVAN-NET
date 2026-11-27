@@ -41,11 +41,12 @@ This repository is an honest snapshot. Every row is labelled, because a coordina
 | Concentric radius lookup, govt vs private | **Working** | `src/pages/FacilityMatching.jsx` |
 | GoI NCD screening tables by age and gender | **Working** | `src/data/guidelines.js` |
 | Teleconsultation and appointment flow | **Working** | `src/pages/DoctorConsultModule.jsx` |
-| Voice symptom intake (13 languages) | **Working** | `src/pages/VoiceCompanionView.jsx` |
+| Voice symptom intake (13 languages, 26 conditions) | **Working** | `src/lib/symptomEngine.js` |
 | Ambulance dispatch sequence | **Simulated** | `src/pages/Emergency.jsx` |
-| Hospital, doctor, and bed data | **Fixture** | `src/data/` |
+| Hospital, doctor, and bed data | **Partly real** | 129 real facilities from OpenStreetMap; doctors are still fixtures |
 | ABDM / ABHA integration | **Not implemented** | — |
-| Persistence, authentication, multi-user roles | **Not implemented** | — |
+| Sign-in (email/password, Supabase, optional) | **Working** | `src/pages/Login.jsx`, `src/lib/auth.js` |
+| Clinical data persistence (assessments, bookings) | **Working** | `assessments` + `patients` tables |
 
 `Working` means it runs and produces a result. `Simulated` means the workflow is real but the counterparties are not. `Fixture` means the data is compiled into the bundle. Full detail: [`docs/limitations.md`](docs/limitations.md).
 
@@ -89,7 +90,20 @@ npm run build    # production bundle
 npm run check    # static: every cross-module reference resolves
 ```
 
-There is no test suite yet. `npm run check` verifies imports, not behaviour.
+**Backend measurement** (`cd Backend`) — trains both models on a held-out split
+and rewrites `docs/evaluation.md`:
+
+```bash
+python evaluate.py
+```
+
+There is no unit-test suite on either side. `npm run check` verifies imports, not
+behaviour. The one behavioural check is the symptom engine's spoken-utterance
+harness:
+
+```bash
+node scripts/test-voice-engine.mjs   # 45 cases, must exit 0
+```
 
 ---
 
@@ -138,6 +152,10 @@ flowchart LR
 
 One call crosses the boundary. Everything else — hospitals, doctors, beds, ETAs, guidelines, prices — is fixture data in `src/data/`.
 
+Supabase is an **optional** third edge, used only for accounts and the `profiles`
+row. `src/lib/supabase.js` exports `null` when the env vars are absent, and the
+app still runs on the demo/guest sign-in path.
+
 ### Designed
 
 The coordination layer this is meant to grow into:
@@ -184,26 +202,28 @@ Three engines, deliberately kept visible rather than merged: [`docs/scoring.md`]
 
 **1 · Rule engine** — `src/lib/triage.js`. Additive, transparent, runs offline. Glucose ≥ 300 scores 3, hypertensive crisis 2, hypoxia 2, each symptom 2, age ≥ 50 scores 1, capped at 15. `HIGH ≥ 9`, `MODERATE ≥ 5`. It also generates the human-readable indicators and recommended action.
 
-**2 · Label heuristic** — `Backend/main.py`. Generates training labels for 3,500 synthetic patients (`risk_score >= 7`, with 2.5% of labels flipped). Uses *different* thresholds from the frontend — symptoms capped at 6 total, age ≥ 65 — which is why the two verdicts can disagree.
+**2 · Label generator** — `Backend/model.py`. Uses **the same rule**, loaded from `src/data/scoring-rule.json`, so labels and on-screen scores cannot drift. The model is trained on the rule's three bands with 2.5% of labels flipped.
 
-**3 · Models** — `StandardScaler` + `LogisticRegression` over the eight vitals, plus a second estimator fed four extra features from a 4-qubit circuit.
+**3 · Models** — `StandardScaler` + `LogisticRegression` over the eight vitals, plus a second estimator fed four extra features from a 4-qubit circuit. Both predict the three bands directly; the reported band is the most likely one. `classWeight: "balanced"` is deliberate asymmetry — it raises HIGH recall from 64% to 84% for about three points of agreement.
 
 ### On the "quantum" label
 
 Being precise, because this is where healthcare demos usually overreach: `quantum_features()` builds a **fixed** 4-qubit `RY`/`RZ` + CNOT angle-encoding circuit and evaluates it with a classical `Statevector` simulation. It has **no trainable parameters, no variational loop, and no quantum speedup**. It is a deterministic non-linear feature map — preprocessing, not a quantum model.
 
+That is now measured rather than argued: an ablation in [`docs/evaluation.md`](docs/evaluation.md) trains the classical and hybrid heads on identical rows and finds **no meaningful difference (macro F1 0.781 vs 0.786)**. The extra features add nothing.
+
 What is genuinely novel here is the **coordination layer and the matching logic**, not the classifier.
 
 ### Facility matching
 
-`src/lib/scoring.js` weights five attributes:
+`src/lib/scoring.js` ranks real facilities from OpenStreetMap. It scores only what the source publishes — distance from a fixed origin, hospital-vs-clinic, a declared emergency tag where present, and published contact details — and reports how much of the weighted evidence was actually available.
 
 ```
-match = 0.30·capability + 0.25·capacity + 0.20·ETA
-      + 0.15·specialist + 0.10·diagnostics      → capped at 99
+HIGH risk:  match = 0.50·proximity + 0.30·emergency + 0.15·kind + 0.05·contact
+other:      match = 0.65·proximity + 0.05·emergency + 0.25·kind + 0.05·contact
 ```
 
-Under a `HIGH` risk verdict, facilities with ICU and emergency capability receive a bonus, so a well-equipped hospital outranks a marginally closer one that cannot treat the patient.
+An unpublished emergency capability is scored **0.35** — below a declared yes, above a declared no — so an unknown small clinic cannot outrank a hospital that declares emergency services. Beds, staffing and equipment are not published by the source, so they are shown as unknown rather than invented. Refresh the dataset with `node scripts/fetch-facilities.mjs`; data © OpenStreetMap contributors, ODbL 1.0.
 
 ---
 
@@ -265,8 +285,8 @@ Hackathon-Project/
         ├── App.jsx            shell, navigation, modal hosting
         ├── Icons.jsx          31 inline SVG icons
         ├── styles.css         all styling
-        ├── data/              patients, doctors, facilities, languages, guidelines
-        ├── lib/               triage.js, scoring.js, api.js
+        ├── data/              patients, doctors, facilities, languages, guidelines, conditions
+        ├── lib/               triage.js, scoring.js, api.js, symptomEngine.js, auth.js, supabase.js
         ├── components/        Field, Checkbox, RecordItem
         ├── modals/            Auth, VideoCall, AppointmentBooking
         └── pages/             one file per screen, plus Result and FacilityCard
@@ -293,6 +313,7 @@ Longer term, JEEVAN-NET is designed to pair with **RAKSHAK-X**, a disaster-respo
 | --- | --- |
 | [`docs/architecture.md`](docs/architecture.md) | As-built layout, one-triage data flow, state ownership, structural debt |
 | [`docs/scoring.md`](docs/scoring.md) | All three scoring engines side by side, and how to align them |
+| [`docs/evaluation.md`](docs/evaluation.md) | Measured held-out performance, engine agreement, and the quantum ablation |
 | [`docs/limitations.md`](docs/limitations.md) | Unbuilt modules, illustrative numbers, security and accessibility gaps |
 | [`Backend/README.md`](Backend/README.md) | Endpoints, request schema, what the models actually are |
 | [`jeevan-net-phase1/README.md`](jeevan-net-phase1/README.md) | Frontend setup, screen list, project layout |

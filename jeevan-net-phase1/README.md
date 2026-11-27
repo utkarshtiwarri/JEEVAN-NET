@@ -22,6 +22,8 @@ scoring API is not running.
 | Expense & Streams | Allopathy / Ayurveda / Homeopathy allocation and drug costs |
 | Emergency Grid | Ambulance dispatch status sequence |
 | Patient Record | Demographics and last recorded vitals |
+| Sign in | Email/password via Supabase, or demo/guest with no database |
+| Patients | Register of people this account records, with per-patient triage history |
 
 ## Requirements
 
@@ -57,6 +59,30 @@ in `../Backend` and the result panel switches from `Offline rule estimate` to
 `Live model`. With no backend running everything still works, using the local
 rule engine, and the UI says so.
 
+## Sign in and the database (optional)
+
+A fresh browser lands on `pages/Login.jsx`. Two paths work with **no**
+configuration:
+
+- **Use Demo Account** — signs in as the fixture patient.
+- **Continue as guest** — same, without setting the persistence flag.
+
+For real accounts, copy `.env.example` to `.env.local` and fill in
+`VITE_SUPABASE_URL` plus either `VITE_SUPABASE_ANON_KEY` (legacy) or
+`VITE_SUPABASE_PUBLISHABLE_KEY` (new), then **restart the dev server** — Vite
+reads env only at startup. Finally run `supabase/setup.sql` in the Supabase SQL editor — paste its
+**contents**, not its file path. It is idempotent and creates/repairs everything
+at once: the `profiles` table and its `abha_id` column, the `patients` register,
+the `assessments` table with `patient_id`, and every RLS policy.
+
+Skipping it degrades rather than crashes: sign-up still works (details fall back
+to account metadata), and the Patients page explains what is missing. To see
+exactly what the database has, open **Setup status** in the sidebar — it probes
+the schema and lists each item.
+
+Never put a `service_role` key in `.env.local`. It bypasses row-level security
+and would ship to the browser; `lib/supabase.js` rejects it.
+
 ## Project layout
 
 ```
@@ -65,8 +91,8 @@ src/
 ├── App.jsx         shell: sidebar, header, modal hosting, screen switch
 ├── Icons.jsx       inline SVG icon set
 ├── styles.css      all styling
-├── data/           patient, doctor, facility, language and guideline fixtures
-├── lib/            triage rules, facility scoring, API client
+├── data/           patient, doctor, facility, language, guideline and condition fixtures
+├── lib/            triage rules, facility scoring, API client, symptom engine, auth
 ├── components/     shared form and display pieces
 ├── modals/         authentication, video call and booking overlays
 └── pages/          one file per screen
@@ -76,10 +102,14 @@ src/
 
 - **No router.** `App.jsx` holds a `selected` string that names the screen to
   render, so nothing is deep-linkable and a refresh returns to the Dashboard.
-- **No persistence.** Refreshing discards the profile, the last assessment and
-  any booking.
-- The OTP modal accepts the code printed on screen. It is a demonstration of the
-  flow, not an authentication control.
+- **Persistence is partial.** The sign-in flag (`jeevan-net.session`), a Supabase
+  session and the `profiles` row survive a refresh; the last assessment, the
+  chosen facility and any booking do not.
+- **No test suite.** The closest thing is
+  `node scripts/test-voice-engine.mjs` — 45 spoken utterances through the symptom
+  engine, which must exit 0.
+- The profile modal edits your own record directly. It has no code step: the row
+  is already scoped to the signed-in account by RLS.
 
 > This is a research prototype. It is not a medical diagnostic system and must
 > not be used for clinical decisions.

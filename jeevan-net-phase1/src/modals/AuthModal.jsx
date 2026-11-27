@@ -1,78 +1,70 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { IconLogo, IconUser, IconPhone, IconMail, IconClock, IconLock } from "../Icons.jsx";
-import { DEMO_ABHA_ID } from "../data/patients.js";
+import { updateMyProfile, authAvailable } from "../lib/auth.js";
+import { supabaseConfigError } from "../lib/supabase.js";
+
+// A plain profile editor — deliberately no one-time code.
+//
+// An earlier version emailed a 6-digit code and refused to save without it. That
+// step could not be completed while the project's mail sender was failing, so
+// editing your own name or age was impossible. Verification is not worth blocking
+// a profile edit on: the row is already scoped to the signed-in account by RLS,
+// and writing it proves nothing extra.
+//
+// Genders are kept to the three values the rest of the app understands; the old
+// "Transgender/Other" option produced a value no other screen recognised.
+const GENDERS = ["Male", "Female", "Other"];
 
 export function AuthModal({ initialUser, onComplete, onClose }) {
-  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: initialUser.name || "",
-    age: initialUser.age || "",
-    gender: initialUser.gender || "Male",
+    age: initialUser.age === "—" ? "" : initialUser.age || "",
+    gender: GENDERS.includes(initialUser.gender) ? initialUser.gender : "Male",
     email: initialUser.email || "",
     contact: initialUser.contact || "",
+    abhaId: initialUser.abhaId || "",
   });
 
-  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
-  const [demoCode] = useState("789210");
-  const [timer, setTimer] = useState(30);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    let interval;
-    if (step === 2 && timer > 0) {
-      interval = setInterval(() => setTimer((t) => t - 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [step, timer]);
-
-  const handleSendOtp = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.age || !formData.email || !formData.contact) {
-      setError("Please fill out all fields.");
-      return;
+    if (busy) return;
+
+    if (!formData.name.trim()) return setError("Enter your full name.");
+    if (!formData.age || Number(formData.age) < 1 || Number(formData.age) > 120) {
+      return setError("Enter an age between 1 and 120.");
     }
-    setError("");
-    setStep(2);
-    setTimer(30);
-  };
 
-  const handleDigitChange = (index, value) => {
-    if (value.length > 1) value = value.slice(-1);
-    const newDigits = [...otpDigits];
-    newDigits[index] = value;
-    setOtpDigits(newDigits);
-
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-input-${index + 1}`);
-      if (nextInput) nextInput.focus();
-    }
-  };
-
-  const handleFillDemo = () => {
-    setOtpDigits(["7", "8", "9", "2", "1", "0"]);
-  };
-
-  const handleVerifyOtp = (e) => {
-    e.preventDefault();
-    const entered = otpDigits.join("");
-    if (entered.length < 6) {
-      setError("Please enter complete 6-digit OTP.");
+    // The demo and guest paths own no database row, so there is nothing to write
+    // to. Update the in-memory profile and say so, rather than pretending to save.
+    if (initialUser?.isDemo) {
+      onComplete({ ...initialUser, ...formData, age: String(formData.age) });
       return;
     }
 
-    // The code was previously never compared against anything, so any six
-    // digits were accepted as "verified".
-    if (entered !== demoCode) {
-      setError(`Incorrect OTP. This demo accepts ${demoCode}.`);
+    if (!authAvailable) {
+      setError(supabaseConfigError || "The database is not configured.");
       return;
     }
 
     setError("");
-    onComplete({
-      ...formData,
-      abhaId: initialUser.abhaId || DEMO_ABHA_ID,
-      isVerified: true,
+    setBusy(true);
+    const result = await updateMyProfile({
+      name: formData.name,
+      age: formData.age,
+      gender: formData.gender,
+      contact: formData.contact,
+      abhaId: formData.abhaId,
     });
+    setBusy(false);
+
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    onComplete(result.user);
   };
 
   return (
@@ -85,161 +77,132 @@ export function AuthModal({ initialUser, onComplete, onClose }) {
             </div>
             <div>
               <h2>JEEVAN-NET Patient Portal</h2>
-              <span className="brand-subtitle">ArogyaNexus Verification</span>
+              <span className="brand-subtitle">ArogyaNexus Patient Profile</span>
             </div>
           </div>
           <p>
-            {step === 1
-              ? "Enter your personal details to initiate secure OTP verification and link with ABDM Sandbox."
-              : `Enter the 6-digit OTP code sent to ${formData.contact} and ${formData.email}`}
+            {initialUser?.isDemo
+              ? "You are signed in as the demo patient, so changes here stay in this session and are not saved to a database."
+              : "Update the details stored against your account. Changes apply to your own record only."}
           </p>
         </div>
 
         <div className="auth-body">
           {error && (
             <div style={{ background: "#fee2e2", color: "#dc2626", padding: "10px 14px", borderRadius: "8px", fontSize: "13px", marginBottom: "16px" }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
-          {step === 1 ? (
-            <form onSubmit={handleSendOtp}>
-              <div className="auth-form-grid">
-                <div className="auth-field-full">
-                  <label className="auth-label">Full Name</label>
-                  <div className="auth-input-wrapper">
-                    <span className="auth-input-icon"><IconUser size={16} /></span>
-                    <input
-                      type="text"
-                      className="auth-input"
-                      placeholder="e.g. Rajesh Sharma"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="auth-label">Age (Years)</label>
-                  <div className="auth-input-wrapper">
-                    <span className="auth-input-icon"><IconClock size={16} /></span>
-                    <input
-                      type="number"
-                      className="auth-input"
-                      placeholder="e.g. 56"
-                      value={formData.age}
-                      onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="auth-label">Gender</label>
-                  <select
-                    className="auth-select"
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Transgender/Other">Other</option>
-                  </select>
-                </div>
-
-                <div className="auth-field-full">
-                  <label className="auth-label">Email Address</label>
-                  <div className="auth-input-wrapper">
-                    <span className="auth-input-icon"><IconMail size={16} /></span>
-                    <input
-                      type="email"
-                      className="auth-input"
-                      placeholder="rajesh.sharma@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="auth-field-full">
-                  <label className="auth-label">Contact Mobile No.</label>
-                  <div className="auth-input-wrapper">
-                    <span className="auth-input-icon"><IconPhone size={16} /></span>
-                    <input
-                      type="tel"
-                      className="auth-input"
-                      placeholder="+91 98765 43210"
-                      value={formData.contact}
-                      onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" className="auth-submit-btn">
-                <span>Send Verification OTP →</span>
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp}>
-              <div className="demo-otp-banner">
-                <div>
-                  <div style={{ fontSize: "11px", color: "#0369a1", fontWeight: 700 }}>DEMO VERIFICATION OTP</div>
-                  <div className="demo-otp-code">{demoCode}</div>
-                </div>
-                <button type="button" className="btn-fill-otp" onClick={handleFillDemo}>
-                  Auto-fill 789210
-                </button>
-              </div>
-
-              <label className="auth-label" style={{ textAlign: "center", display: "block" }}>Enter 6-Digit OTP</label>
-              <div className="otp-box-container">
-                {otpDigits.map((digit, idx) => (
+          <form onSubmit={handleSave}>
+            <div className="auth-form-grid">
+              <div className="auth-field-full">
+                <label className="auth-label" htmlFor="profile-name">Full Name</label>
+                <div className="auth-input-wrapper">
+                  <span className="auth-input-icon"><IconUser size={16} /></span>
                   <input
-                    key={idx}
-                    id={`otp-input-${idx}`}
+                    id="profile-name"
                     type="text"
-                    maxLength={1}
-                    className="otp-digit-input"
-                    value={digit}
-                    onChange={(e) => handleDigitChange(idx, e.target.value)}
+                    className="auth-input"
+                    placeholder="e.g. Rajesh Sharma"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
-                ))}
+                </div>
               </div>
 
-              <div style={{ textAlign: "center", fontSize: "12px", color: "#64748b", marginBottom: "16px" }}>
-                {timer > 0 ? (
-                  <span>Resend OTP in <strong>{timer}s</strong></span>
-                ) : (
-                  <button
-                    type="button"
-                    style={{ background: "none", border: "none", color: "#2563eb", fontWeight: 600, cursor: "pointer" }}
-                    onClick={() => setTimer(30)}
-                  >
-                    Resend OTP Code
-                  </button>
-                )}
+              <div>
+                <label className="auth-label" htmlFor="profile-age">Age (Years)</label>
+                <div className="auth-input-wrapper">
+                  <span className="auth-input-icon"><IconClock size={16} /></span>
+                  <input
+                    id="profile-age"
+                    type="number"
+                    min="1"
+                    max="120"
+                    className="auth-input"
+                    placeholder="e.g. 56"
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                  />
+                </div>
               </div>
 
-              <button type="submit" className="auth-submit-btn">
-                <span>Verify OTP & Sign In ✓</span>
-              </button>
+              <div>
+                <label className="auth-label" htmlFor="profile-gender">Gender</label>
+                <select
+                  id="profile-gender"
+                  className="auth-select"
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                >
+                  {GENDERS.map((gender) => (
+                    <option key={gender} value={gender}>{gender}</option>
+                  ))}
+                </select>
+              </div>
 
-              <button
-                type="button"
-                style={{ width: "100%", background: "none", border: "none", color: "#64748b", marginTop: "12px", fontSize: "13px", cursor: "pointer" }}
-                onClick={() => setStep(1)}
-              >
-                ← Back to Edit Details
-              </button>
-            </form>
-          )}
+              <div className="auth-field-full">
+                <label className="auth-label" htmlFor="profile-email">Email Address</label>
+                <div className="auth-input-wrapper">
+                  <span className="auth-input-icon"><IconMail size={16} /></span>
+                  <input
+                    id="profile-email"
+                    type="email"
+                    className="auth-input"
+                    value={formData.email}
+                    readOnly
+                    title="The address you signed in with. Changing it needs a separate confirmation flow."
+                  />
+                </div>
+              </div>
+
+              <div className="auth-field-full">
+                <label className="auth-label" htmlFor="profile-contact">Contact Mobile No.</label>
+                <div className="auth-input-wrapper">
+                  <span className="auth-input-icon"><IconPhone size={16} /></span>
+                  <input
+                    id="profile-contact"
+                    type="tel"
+                    className="auth-input"
+                    placeholder="+91 98765 43210"
+                    value={formData.contact}
+                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="auth-field-full">
+                <label className="auth-label" htmlFor="profile-abha">ABHA ID (optional)</label>
+                <div className="auth-input-wrapper">
+                  <span className="auth-input-icon"><IconLock size={16} /></span>
+                  <input
+                    id="profile-abha"
+                    type="text"
+                    className="auth-input"
+                    placeholder="ABHA-0000-0000-0000"
+                    value={formData.abhaId}
+                    onChange={(e) => setFormData({ ...formData, abhaId: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" className="auth-submit-btn" disabled={busy}>
+              <span>{busy ? "Saving…" : "Save Profile"}</span>
+            </button>
+
+            <button
+              type="button"
+              style={{ width: "100%", background: "none", border: "none", color: "#64748b", marginTop: "12px", fontSize: "13px", cursor: "pointer" }}
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </form>
 
           <div className="auth-footer-note">
-            <IconLock size={13} /> Encrypted via ABDM Health ID Sandbox & Government Protocols
+            <IconLock size={13} /> Stored in your own patient record. Not an ABDM integration.
           </div>
         </div>
       </div>

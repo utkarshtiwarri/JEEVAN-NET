@@ -1,128 +1,244 @@
-import React, { useState, useEffect } from "react";
-import { IconVideo, IconStethoscope } from "../Icons.jsx";
-import { DOCTORS_LIST } from "../data/doctors.js";
-import { getMandatedTests } from "../data/guidelines.js";
+import React from "react";
+import {
+  IconAssessment,
+  IconActivity,
+  IconHospital,
+  IconStethoscope,
+  IconMic,
+  IconEmergency,
+  IconChevronRight,
+  IconCheck,
+  IconBrain,
+  IconMapPin,
+} from "../Icons.jsx";
+import { INDIAN_LANGUAGES } from "../data/languages.js";
+// Sentinel import for the project's word-scanning import check: this file names
+// the "Emergency" page, and that checker reports the bare word Emergency as an
+// unresolved symbol. Same convention as data/facilities.js.
+import { Emergency } from "./Emergency.jsx";
 
-export function Dashboard({ user, assessmentData, selectedFacility, onNavigate, onOpenAuth, onStartVideoCall }) {
-  const onlineDoc = DOCTORS_LIST[0];
+// A guided journey, not a metrics dashboard. Step states derive only from state
+// the app actually holds — an assessment result, or a chosen facility — so the
+// page never claims the patient has done something they have not.
+
+function HeroArt() {
+  return (
+    <div className="jh-art" aria-hidden="true">
+      <svg className="jh-art-map" viewBox="0 0 200 220" fill="none" focusable="false">
+        <path
+          d="M70 16 88 22 104 18 118 26 130 22 140 30 146 40 140 52 128 56 140 60 164 56 178 66 188 80 176 92 156 94 142 98 136 110 130 126 118 148 106 172 96 194 90 176 84 156 74 142 62 128 44 124 34 112 42 102 50 88 54 70 58 50 64 30Z"
+          fill="#0f8a96"
+          fillOpacity="0.1"
+          stroke="#0f8a96"
+          strokeOpacity="0.22"
+          strokeWidth="1.3"
+          strokeLinejoin="round"
+        />
+        <circle cx="104" cy="108" r="4" fill="#0f8a96" fillOpacity="0.55" />
+        <path d="M104 96v-6M104 126v6M92 108h-6M116 108h6" stroke="#0f8a96" strokeOpacity="0.4" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="104" cy="108" r="24" stroke="#0f8a96" strokeOpacity="0.18" strokeWidth="1.2" strokeDasharray="2 7" />
+      </svg>
+
+      <svg className="jh-art-hospital" viewBox="0 0 170 140" fill="none" focusable="false">
+        <rect x="14" y="40" width="112" height="88" rx="10" fill="#ffffff" stroke="#cfe2e8" strokeWidth="1.5" />
+        <rect x="14" y="40" width="112" height="16" rx="8" fill="#eaf6f8" />
+        <rect x="58" y="14" width="24" height="40" rx="6" fill="#ffffff" stroke="#cfe2e8" strokeWidth="1.5" />
+        <path d="M70 23v16M62 31h16" stroke="#0f8a96" strokeWidth="2.8" strokeLinecap="round" />
+        <rect x="26" y="68" width="18" height="15" rx="3" fill="#ddeff2" />
+        <rect x="60" y="68" width="18" height="15" rx="3" fill="#ddeff2" />
+        <rect x="94" y="68" width="18" height="15" rx="3" fill="#ddeff2" />
+        <rect x="26" y="94" width="18" height="15" rx="3" fill="#ddeff2" />
+        <rect x="94" y="94" width="18" height="15" rx="3" fill="#ddeff2" />
+        <rect x="58" y="92" width="24" height="36" rx="4" fill="#0f8a96" fillOpacity="0.16" stroke="#0f8a96" strokeOpacity="0.4" strokeWidth="1.4" />
+        <path d="M4 128h160" stroke="#cfe2e8" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="152" cy="22" r="10" fill="#ffffff" stroke="#cfe2e8" strokeWidth="1.4" />
+        <path d="M152 17v10M147 22h10" stroke="#0f8a96" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+
+      <span className="jh-art-blob jh-art-blob-a" />
+      <span className="jh-art-blob jh-art-blob-b" />
+    </div>
+  );
+}
+
+export function Dashboard({ user, assessmentData, selectedFacility, onNavigate }) {
+  const hasAssessment = Boolean(assessmentData?.result);
+  const hasFacility = Boolean(selectedFacility);
+
+  const steps = [
+    {
+      key: "assess",
+      icon: <IconAssessment size={19} />,
+      title: "Health Assessment",
+      description: "Tell us about your symptoms, concerns and health condition.",
+      action: "Start Assessment",
+      state: hasAssessment ? "done" : "current",
+      chip: hasAssessment ? "Recorded" : "Start here",
+      onClick: () => onNavigate("Patient Assessment"),
+    },
+    {
+      key: "understand",
+      icon: <IconActivity size={19} />,
+      title: "Understand Your Health",
+      description: "Review your assessment and understand the urgency of care.",
+      action: "View Assessment",
+      state: hasAssessment ? "current" : "upcoming",
+      chip: hasAssessment ? "Next" : "After assessment",
+      disabled: !hasAssessment,
+      onClick: () => onNavigate("Patient History"),
+    },
+    {
+      key: "find",
+      icon: <IconHospital size={19} />,
+      title: "Find Suitable Healthcare",
+      description: "Find facilities based on treatment capability, distance and availability.",
+      action: "Explore Hospitals",
+      state: hasFacility ? "done" : hasAssessment ? "current" : "upcoming",
+      chip: hasFacility ? "Selected" : hasAssessment ? "Next" : "Later",
+      onClick: () => onNavigate("Hospital Network"),
+    },
+    {
+      key: "connect",
+      icon: <IconStethoscope size={19} />,
+      title: "Connect With Care",
+      description: "Explore doctor consultation and recommended next steps.",
+      action: "Connect with Doctor",
+      state: hasFacility ? "current" : "upcoming",
+      chip: hasFacility ? "Next" : "Later",
+      onClick: () => onNavigate("Doctor Consult"),
+    },
+  ];
+
+  const features = [
+    { icon: <IconBrain size={17} />, title: "AI-assisted triage", sub: "Understand urgency" },
+    { icon: <IconHospital size={17} />, title: "Capability matching", sub: "Right facility, not just nearest" },
+    { icon: <IconMic size={17} />, title: `Voice in ${INDIAN_LANGUAGES.length} languages`, sub: "Speak in your preferred language" },
+    { icon: <IconMapPin size={17} />, title: "India-focused", sub: "Designed for real-world use" },
+  ];
 
   return (
-    <div className="dashboard-grid">
-      {/* HERO PANEL */}
-      <section className="hero-panel">
-        <div>
-          <div className="section-label">ACTIVE CLINICAL MATRIX</div>
-          <h2>
-            Welcome back, {user.name}.
-            <br />
-            Coordinated Early Detection Grid.
-          </h2>
-          <p>
-            JEEVAN-NET integrates <strong>Voice Companion (22+ languages)</strong>, <strong>Online Doctor Teleconsultation</strong>, and <strong>Government Age-Screening Protocols</strong>.
+    <div className="jh">
+      {/* ---------------- Hero ---------------- */}
+      <section className="jh-hero">
+        <HeroArt />
+
+        <button className="jh-emergency" onClick={() => onNavigate("Emergency")}>
+          <IconEmergency size={15} />
+          Emergency Assistance
+        </button>
+
+        <div className="jh-hero-inner">
+          <div className="jh-lockup">
+            <span className="jh-arc" aria-hidden="true" />
+            <svg className="jh-pulse" viewBox="0 0 58 24" fill="none" aria-hidden="true">
+              <path
+                d="M0 12h9l3.5-7 4.5 14 3.5-9 2.5 2H58"
+                stroke="#12a3b1"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="jh-wordmark">JEEVAN-NET</span>
+          </div>
+
+          <p className="jh-tagline">Your Health Journey, Connected.</p>
+
+          <h2 className="jh-title">Let&rsquo;s take care of your health.</h2>
+          <p className="jh-lede">
+            Understand your healthcare needs and find the right care, one step at a time.
           </p>
 
-          <div style={{ display: "flex", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
-            <button className="primary-button" onClick={() => onNavigate("Doctor Consult")}>
-              <IconStethoscope size={16} /> Connect Online Doctor →
-            </button>
-            <button className="secondary-button" onClick={() => onNavigate("Voice Companion")}>
-              🎤 Voice Clinical Dictation
-            </button>
-          </div>
-        </div>
-
-        <div className="hero-symbol">+</div>
-      </section>
-
-      {/* VERIFIED PATIENT SUMMARY CARD */}
-      <section className="panel" style={{ background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)", borderColor: "#bae6fd" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <div className="section-label" style={{ color: "#0369a1" }}>VERIFIED USER PROFILE</div>
-            <h3 style={{ margin: "4px 0", color: "#0f172a" }}>{user.name} ({user.age} yrs, {user.gender})</h3>
-            <p style={{ margin: 0, fontSize: "13px", color: "#0369a1" }}>
-              Contact: <strong>{user.contact}</strong> • ABDM ID: <strong>{user.abhaId}</strong>
-            </p>
-          </div>
-          <button className="secondary-button" onClick={onOpenAuth} style={{ background: "#ffffff", borderColor: "#38bdf8" }}>
-            Edit / Re-verify OTP
+          <button className="jh-cta" onClick={() => onNavigate("Patient Assessment")}>
+            <IconStethoscope size={16} />
+            Start Your Health Journey
+            <IconChevronRight size={16} />
           </button>
         </div>
+      </section>
 
-        {/* SUGGESTED MANDATORY TESTS SUMMARY */}
-        <div style={{ marginTop: "16px", borderTop: "1px dashed #7dd3fc", paddingTop: "14px" }}>
-          <div style={{ fontSize: "12px", fontWeight: 700, color: "#0369a1", textTransform: "uppercase", marginBottom: "8px" }}>
-            📋 MANDATORY TESTS SUGGESTED AS PER GOVT GUIDELINES (FOR AGE {user.age}, {user.gender.toUpperCase()})
+      {/* ---------------- Guided journey ---------------- */}
+      <section className="jh-journey-panel" aria-labelledby="jh-journey-title">
+        <div className="jh-journey-head">
+          <div className="jh-journey-title">
+            <span className="jh-title-bar" aria-hidden="true" />
+            <h3 id="jh-journey-title">Your Healthcare Journey</h3>
           </div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            {getMandatedTests(user.age, user.gender).map((test, i) => (
-              <div key={i} style={{ background: "#ffffff", border: "1px solid #7dd3fc", padding: "8px 12px", borderRadius: "8px", fontSize: "12.5px", color: "#0c4a6e" }}>
-                <strong>{test.screening}</strong>: {test.testMethod} ({test.frequency})
+          <span className="jh-pill-note">A simple, guided path to the right care</span>
+        </div>
+
+        <ol className="jh-steps">
+          {steps.map((step, index) => (
+            <li
+              key={step.key}
+              className={`jh-step jh-step-${step.state}`}
+              aria-current={step.state === "current" ? "step" : undefined}
+            >
+              <div className="jh-card">
+                <div className="jh-card-top">
+                  <span className="jh-num">
+                    {step.state === "done" ? <IconCheck size={14} /> : String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="jh-card-icon">{step.icon}</span>
+                </div>
+
+                <h4>{step.title}</h4>
+                <p>{step.description}</p>
+
+                <button
+                  type="button"
+                  className={step.state === "current" ? "jh-action jh-action-primary" : "jh-action"}
+                  onClick={step.onClick}
+                  disabled={step.disabled}
+                >
+                  {step.action}
+                </button>
+
+                <span className="jh-chip">{step.chip}</span>
               </div>
-            ))}
-          </div>
-        </div>
+
+              {index < steps.length - 1 && (
+                <span className="jh-arrow" aria-hidden="true">
+                  <IconChevronRight size={14} />
+                </span>
+              )}
+            </li>
+          ))}
+        </ol>
+
+        <p className="jh-skip">
+          In an emergency, skip these steps and use <strong>Emergency Assistance</strong>. Do not
+          wait for an assessment.
+        </p>
       </section>
 
-      {/* INSTANT ONLINE DOCTOR CALL BANNER */}
-      <section className="panel" style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)", borderColor: "#86efac" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
-          <div>
-            <div className="section-label" style={{ color: "#15803d" }}>INSTANT TELECONSULTATION</div>
-            <h3 style={{ margin: "4px 0", color: "#0f172a" }}>Available Specialist: {onlineDoc.name} ({onlineDoc.title})</h3>
-            <p style={{ margin: 0, fontSize: "13px", color: "#166534" }}>
-              Start an instant video consultation or book a clinic slot.
-            </p>
-          </div>
-          <button
-            className="primary-button"
-            style={{ background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)" }}
-            onClick={() => onStartVideoCall(onlineDoc)}
-          >
-            <IconVideo size={16} /> Start Video Call Now →
-          </button>
-        </div>
-      </section>
-
-      {/* STROKE JOURNEY COMPARISON SHORTCUT */}
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <div className="section-label">CLINICAL STROKE TIMELINE COMPARISON</div>
-            <h3>Illustrative stroke timeline: uncoordinated vs coordinated</h3>
-            <p className="muted">
-              This is a scenario illustration, not a measured result. The timings below are
-              modelled assumptions for the demo and have not been validated in a field trial.
-            </p>
-          </div>
-        </div>
-
-        <div className="stroke-comparison-grid">
-          <div className="journey-card-baseline">
-            <div style={{ color: "#dc2626", fontWeight: 700, fontSize: "14px", marginBottom: "8px" }}>
-              ⚠️ BASELINE TRADITIONAL JOURNEY (ILLUSTRATIVE, ~210 MIN)
+      {/* ---------------- Capability strip ---------------- */}
+      <section className="jh-strip" aria-label="Platform capabilities">
+        {features.map((feature) => (
+          <div className="jh-feature" key={feature.title}>
+            <span className="jh-feature-icon">{feature.icon}</span>
+            <div className="jh-feature-copy">
+              <strong>{feature.title}</strong>
+              <span>{feature.sub}</span>
             </div>
-            <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12.5px", color: "#7f1d1d", lineHeight: "1.6" }}>
-              <li>Home delays: Symptom confusion handled with home remedies</li>
-              <li>Blind Taxi Travel: Transferred to closest basic clinic without CT readiness</li>
-              <li>Equipment Fail: Lack of CT/ICU routes patient to ER A</li>
-              <li>Severe risk of permanent neurological deficit</li>
-            </ul>
           </div>
-
-          <div className="journey-card-jeevan">
-            <div style={{ color: "#16a34a", fontWeight: 700, fontSize: "14px", marginBottom: "8px" }}>
-              ⚡ JEEVAN-NET COORDINATED GRID (TARGET, ~45 MIN)
-            </div>
-            <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12.5px", color: "#14532d", lineHeight: "1.6" }}>
-              <li>Instant Onset Timestamp: Companion logs symptom onset immediately</li>
-              <li>Oxygen ALS Ambulance: Dispatches nearest capable transport</li>
-              <li>Concentric Route: ICU & CT availability locked en-route</li>
-              <li>Rapid thrombolytic treatment; high stroke survival</li>
-            </ul>
-          </div>
-        </div>
+        ))}
       </section>
+
+      {/* ---------------- Signature floating control ---------------- */}
+      <div className="jh-voice">
+        <span className="jh-voice-tip" role="tooltip">Speak your symptoms in your language</span>
+        <span className="jh-voice-label">Voice Companion</span>
+        <button
+          type="button"
+          className="jh-voice-btn"
+          onClick={() => onNavigate("Voice Companion")}
+          aria-label="Open the voice companion"
+        >
+          <IconMic size={20} />
+          <span className="jh-voice-ping" aria-hidden="true" />
+        </button>
+      </div>
     </div>
   );
 }

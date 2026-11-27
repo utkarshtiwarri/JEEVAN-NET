@@ -1,5 +1,9 @@
 export const DEMO_ABHA_ID = "ABHA-8921-7740-9281";
 
+// Marks the fixture patient. Demo and guest sign-in both start from this object,
+// so `isDemo` is how the rest of the app tells "a real account" apart from
+// "someone clicking through the prototype" — real accounts persist records,
+// demo sessions must not.
 export const defaultUser = {
   name: "Rajesh Sharma",
   age: "56",
@@ -8,6 +12,7 @@ export const defaultUser = {
   contact: "+91 98765 43210",
   abhaId: DEMO_ABHA_ID,
   isVerified: true,
+  isDemo: true,
 };
 
 // The form opens on a stable, low-risk patient. It previously shipped

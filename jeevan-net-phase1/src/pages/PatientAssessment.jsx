@@ -3,20 +3,32 @@ import { IconShield } from "../Icons.jsx";
 import { defaultForm, criticalDemoForm } from "../data/patients.js";
 import { getMandatedTests } from "../data/guidelines.js";
 import { localTriage } from "../lib/triage.js";
-import { assessPatient } from "../lib/api.js";
+import { assessPatient, saveAssessment } from "../lib/api.js";
 import { Field } from "../components/Field.jsx";
 import { Checkbox } from "../components/Checkbox.jsx";
 import { Result } from "./Result.jsx";
 
-export function PatientAssessment({ user, onAssessmentComplete, onOpenFacilityMatching }) {
+export function PatientAssessment({ user, patient = null, onAssessmentComplete, onOpenFacilityMatching }) {
+  // Assess either a patient from the register or the signed-in user themselves.
+  // A patient row can carry no age, and a real account with no profile row
+  // yields age "—" and gender "Not specified". None of those are valid inputs:
+  // "—" becomes NaN in the triage math and a gender outside the select leaves it
+  // blank. Fall back to the stable baseline instead.
+  const source = patient || user;
+  const seedAge = /^\d+$/.test(String(source?.age ?? "")) ? String(source.age) : defaultForm.age;
+  const seedGender = ["Male", "Female", "Other"].includes(source?.gender)
+    ? source.gender
+    : defaultForm.gender;
+
   const [form, setForm] = useState({
     ...defaultForm,
-    age: user.age || "56",
-    gender: user.gender || "Male",
+    age: seedAge,
+    gender: seedGender,
   });
 
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saveState, setSaveState] = useState(null);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -48,6 +60,24 @@ export function PatientAssessment({ user, onAssessmentComplete, onOpenFacilityMa
       result: combined,
       assessedAt: new Date().toLocaleString(),
     });
+
+    // Real accounts persist the assessment. The demo and guest paths never do,
+    // so no invented record lands in a shared table.
+    if (user?.isDemo) {
+      setSaveState(null);
+    } else {
+      try {
+        const saved = await saveAssessment(form, combined, patient?.id || null);
+        setSaveState(
+          saved?._warning
+            ? { ok: false, message: `${saved._warning} — saved without a patient link.` }
+            : { ok: true, message: "Saved to your patient record." },
+        );
+      } catch (error) {
+        setSaveState({ ok: false, message: error.message });
+      }
+    }
+
     setLoading(false);
   };
 
@@ -59,8 +89,10 @@ export function PatientAssessment({ user, onAssessmentComplete, onOpenFacilityMa
             <div className="section-label">CLINICAL TRIAGE & REMEDY PIPELINE</div>
             <h2>Patient Parameter Intake</h2>
             <p className="muted">
-              Age and gender come from your verified profile. Vitals start at a stable
-              baseline — use a preset below to load a specific scenario.
+              {patient
+                ? `Assessing ${patient.name}. Age and gender come from the register; the assessment is filed against this patient.`
+                : "Assessing yourself. Age and gender come from your profile."}{" "}
+              Vitals start at a stable baseline — use a preset below to load a specific scenario.
             </p>
           </div>
           <div className="demo-badge">LIVE CLINICAL LOOP</div>
@@ -71,18 +103,14 @@ export function PatientAssessment({ user, onAssessmentComplete, onOpenFacilityMa
           <button
             type="button"
             className="secondary-button preset-button"
-            onClick={() =>
-              setForm({ ...defaultForm, age: user.age || "56", gender: user.gender || "Male" })
-            }
+            onClick={() => setForm({ ...defaultForm, age: seedAge, gender: seedGender })}
           >
             Stable patient
           </button>
           <button
             type="button"
             className="secondary-button preset-button"
-            onClick={() =>
-              setForm({ ...criticalDemoForm, age: user.age || "56", gender: user.gender || "Male" })
-            }
+            onClick={() => setForm({ ...criticalDemoForm, age: seedAge, gender: seedGender })}
           >
             Critical crisis patient
           </button>
@@ -150,6 +178,19 @@ export function PatientAssessment({ user, onAssessmentComplete, onOpenFacilityMa
         <button className="primary-button analyze-button" onClick={analyze} disabled={loading}>
           {loading ? "Processing Quantum ML Triage..." : "Analyze Patient Triage →"}
         </button>
+
+        {saveState && (
+          <p
+            className="muted"
+            style={{
+              marginTop: "10px",
+              fontSize: "12.5px",
+              color: saveState.ok ? "#15803d" : "#b91c1c",
+            }}
+          >
+            {saveState.ok ? `✓ ${saveState.message}` : `Not saved: ${saveState.message}`}
+          </p>
+        )}
       </section>
 
       {result && <Result result={result} onOpenFacilityMatching={onOpenFacilityMatching} />}

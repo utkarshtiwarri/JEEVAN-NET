@@ -19,6 +19,12 @@ hospitals, doctors, beds, ETAs, screening guidelines, prices — is fixture data
 compiled into the bundle. The backend has no hospital, appointment, timeline or
 diagnostic endpoint.
 
+There is also an **optional third edge to Supabase**, which is not a dependency:
+`lib/supabase.js` exports `null` plus a `supabaseConfigError` when
+`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing, and `lib/auth.js`
+falls back to `user_metadata` when the `profiles` table has not been created. The
+app must render with none of that configured.
+
 ## Frontend layout
 
 ```
@@ -33,8 +39,9 @@ jeevan-net-phase1/
     ├── App.jsx               shell: sidebar, header, modal hosting, screen switch
     ├── Icons.jsx             ~31 inline SVG icons
     ├── styles.css            all styling
-    ├── data/                 patients, doctors, facilities, languages, guidelines
-    ├── lib/                  triage.js, scoring.js, api.js
+    ├── data/                 patients, doctors, facilities, languages, guidelines, conditions
+    ├── lib/                  triage.js, scoring.js, api.js, symptomEngine.js,
+    │                         auth.js, supabase.js, patients.js
     ├── components/           Field, Checkbox, RecordItem
     ├── modals/               AuthModal, LiveVideoCallModal, AppointmentBookingModal
     └── pages/                nine screens, plus Result and FacilityCard
@@ -58,14 +65,19 @@ All state lives in `App` and is passed down as props:
 
 | State | Owner | Notes |
 | --- | --- | --- |
-| `user` | `App` | replaces the whole object on OTP "verification" |
+| `signedIn` | `App` | localStorage flag plus Supabase session; gates the whole app |
+| `user` | `App` | replaces the whole object on sign-in, profile save or sign-out |
 | `selected` | `App` | which screen renders |
+| `selectedPatient` | `App` | which register patient is being viewed or assessed |
 | `assessmentData` | `App` | last triage result; lost on refresh |
 | `selectedFacility` | `App` | chosen hospital for dispatch |
 | `activeVideoCallDoctor`, `bookingModalDoctor` | `App` | which modal is open |
 
-There is no persistence layer of any kind — no localStorage, no server session.
-Refreshing discards the profile, the assessment and any booking.
+Persistence is partial. Two things survive a refresh: the `jeevan-net.session`
+localStorage flag that backs the demo/guest sign-in path, and — when Supabase is
+configured — a real Supabase Auth session plus the `profiles` row. Everything
+clinical (the last assessment, the chosen facility, any booking) is React state
+and is lost. See [`limitations.md`](limitations.md).
 
 ## Data flow of one triage
 
@@ -111,4 +123,13 @@ quietly show the offline estimate instead.
   `:root` token set in `styles.css` is only partly authoritative.
 - No router (above), no persistence (above).
 - No test suite on either side; `npm run check` is a static import check, not a
-  test.
+  test. The one behavioural check is `scripts/test-voice-engine.mjs` — 45 spoken
+  utterances against `lib/symptomEngine.js`.
+- `lib/api.js` carries five Supabase CRUD helpers; `saveAssessment` is live, the
+  other four (`saveProfile`, `getProfile`, `getAssessmentHistory`,
+  `deleteAssessment`) have no caller and duplicate `lib/auth.js` / `lib/patients.js`.
+- The register's assessment history comes from `lib/patients.js`
+  (`getPatientAssessments`), not from `lib/api.js`.
+- The sentinel-import convention required by `scripts/verify-imports.mjs`
+  creates a real cycle: `data/facilities.js` → `pages/Emergency.jsx` →
+  `data/facilities.js`.

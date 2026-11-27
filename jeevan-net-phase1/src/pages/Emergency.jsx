@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { facilitiesDatabase } from "../data/facilities.js";
+import React, { useState } from "react";
+import { facilitiesDatabase, LOW_RISK_FALLBACK } from "../data/facilities.js";
+import { estimateEtaMinutes } from "../lib/scoring.js";
 
 export function Emergency({ assessmentData, selectedFacility, onOpenPatientRecord }) {
   const [status, setStatus] = useState("Awaiting Dispatch");
-  const facility = selectedFacility || facilitiesDatabase[0];
+  const facility = selectedFacility || LOW_RISK_FALLBACK || facilitiesDatabase[0];
+  const eta = facility.etaMinutes ?? estimateEtaMinutes(facility.distanceKm);
 
   const dispatch = () => {
     setStatus("Requested");
@@ -24,7 +26,9 @@ export function Emergency({ assessmentData, selectedFacility, onOpenPatientRecor
         <div>
           <div className="section-label">EMERGENCY COORDINATION GRID</div>
           <h2>Oxygen ALS Ambulance Dispatch</h2>
-          <p className="muted">Destination: <strong>{facility.name}</strong> ({facility.distance}, ETA {facility.eta} mins)</p>
+          <p className="muted">
+            Destination: <strong>{facility.name}</strong> ({facility.distanceKm} km, ETA ~{eta} mins)
+          </p>
         </div>
         <div className="demo-badge">LIVE SIMULATION MODE</div>
       </section>

@@ -1,0 +1,82 @@
+{
+  "_readme": [
+    "THE SINGLE SOURCE OF TRUTH FOR TRIAGE SCORING.",
+    "",
+    "Both runtimes read this file, so the rule cannot drift between them:",
+    "  frontend  -> src/lib/triage.js   (imports it as JSON)",
+    "  backend   -> Backend/model.py    (loads it by relative path)",
+    "",
+    "Why it lives under src/data: Vite can import JSON only from inside the",
+    "frontend root without extra config, and Python can read it from anywhere.",
+    "Putting it in a top-level shared/ folder would mean widening Vite's",
+    "server.fs.allow for one small file.",
+    "",
+    "Change a weight or a threshold here and BOTH engines move together.",
+    "After any change run, in order:",
+    "  1. node scripts/check-scoring-parity.mjs   (frontend still matches this file)",
+    "  2. cd Backend && python evaluate.py        (regenerates docs/evaluation.md)",
+    "  3. node scripts/test-voice-engine.mjs      (unrelated, but cheap insurance)",
+    "",
+    "Nothing here is clinically validated. The weights are round numbers chosen to",
+    "make a demo legible; they are not derived from any guideline or outcome data."
+  ],
+
+  "version": 2,
+  "description": "Additive 0-15 triage score over vitals and reported symptoms.",
+
+  "maxScore": 15,
+
+  "weights": {
+    "glucose": {
+      "critical": 300,
+      "criticalPoints": 3,
+      "elevated": 200,
+      "elevatedPoints": 2
+    },
+    "bloodPressure": {
+      "crisisSystolic": 160,
+      "crisisDiastolic": 100,
+      "crisisPoints": 2,
+      "stage1Systolic": 140,
+      "stage1Diastolic": 90,
+      "stage1Points": 1
+    },
+    "heartRate": {
+      "tachycardia": 100,
+      "points": 1
+    },
+    "spo2": {
+      "critical": 94,
+      "criticalPoints": 2,
+      "borderline": 96,
+      "borderlinePoints": 1
+    },
+    "temperature": {
+      "high": 38.5,
+      "low": 35,
+      "points": 1
+    },
+    "symptom": {
+      "pointsEach": 2
+    },
+    "age": {
+      "atLeast": 50,
+      "points": 1
+    }
+  },
+
+  "levels": {
+    "high": 9,
+    "moderate": 5
+  },
+
+  "_classWeightNote": [
+    "Passed to LogisticRegression as class_weight. Both models predict the three",
+    "bands above directly, so there is no probability threshold to tune.",
+    "\"balanced\" was chosen for triage asymmetry: it lifts HIGH recall from 64% to",
+    "84% on the held-out split, at the cost of ~3 points of overall agreement. A",
+    "false HIGH over-escalates; a missed HIGH sends an emergency patient home.",
+    "Set to null for the maximum-agreement variant - see docs/evaluation.md."
+  ],
+  "classWeight": "balanced"
+}
